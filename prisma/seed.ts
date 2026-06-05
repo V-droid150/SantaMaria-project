@@ -1,4 +1,4 @@
-import { PrismaClient, ProductType, Role } from "@prisma/client";
+import { PrismaClient, ProductType, ProductFocus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -17,6 +17,12 @@ async function main() {
       phone: "+62 812-0000-0000",
       email: "halo@santamaria.id",
       taxRate: 11, // PPN 11%
+      businessType: "Pemilik UMKM",
+      category: "Kuliner",
+      productFocus: ProductFocus.BOTH,
+      scale: "Rp 50jt - 200jt / bulan",
+      goals: ["Kelola stok", "Catat keuangan", "Sistem kasir (POS)"],
+      channels: ["Toko fisik", "WhatsApp / Sosmed"],
     },
   });
 
@@ -32,8 +38,8 @@ async function main() {
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: { name: u.name, role: u.role },
-      create: { ...u, passwordHash, storeId: store.id },
+      update: { name: u.name, role: u.role, onboardedAt: new Date() },
+      create: { ...u, passwordHash, storeId: store.id, onboardedAt: new Date() },
     });
   }
 

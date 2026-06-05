@@ -9,6 +9,7 @@ export type SessionPayload = {
   name: string;
   role: Role;
   storeId: string;
+  onboarded: boolean; // sudah menyelesaikan kuesioner onboarding?
 };
 
 const SECRET = new TextEncoder().encode(
@@ -35,6 +36,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
       name: String(payload.name),
       role: payload.role as Role,
       storeId: String(payload.storeId),
+      onboarded: Boolean(payload.onboarded),
     };
   } catch {
     return null;

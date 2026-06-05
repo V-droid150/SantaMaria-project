@@ -25,6 +25,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
   }
 
+  // User yang daftar lewat Google/Apple tidak punya password.
+  if (!user.passwordHash) {
+    return NextResponse.json(
+      { error: "Akun ini terdaftar via Google/Apple. Silakan masuk dengan metode tersebut." },
+      { status: 401 }
+    );
+  }
+
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) {
     return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
@@ -40,6 +48,7 @@ export async function POST(req: Request) {
     name: user.name,
     role: user.role,
     storeId: user.storeId,
+    onboarded: user.onboardedAt !== null,
   });
 
   const res = NextResponse.json({

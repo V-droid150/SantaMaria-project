@@ -96,6 +96,13 @@ enum DebtStatus {
   OVERDUE
 }
 
+// Fokus produk yang dijual penjual (dipilih saat onboarding)
+enum ProductFocus {
+  PHYSICAL // Hanya produk fisik
+  DIGITAL // Hanya produk digital
+  BOTH // Keduanya
+}
+
 // ============================================================================
 // RBAC & STORE
 // ============================================================================
@@ -109,6 +116,15 @@ model Store {
   taxRate   Decimal  @default(0) @db.Decimal(5, 2) // % pajak default
   currency  String   @default("IDR")
   logoUrl   String?
+
+  // ---- Profil bisnis dari onboarding ----
+  businessType String? // pekerjaan/peran penjual: "Pemilik UMKM", "Freelancer", dll
+  category     String? // kategori produk: "Kuliner", "Fashion", "Jasa Digital", ...
+  productFocus ProductFocus @default(PHYSICAL) // fisik / digital / keduanya
+  scale        String? // skala usaha atau estimasi omzet
+  goals        String[] // tujuan pakai aplikasi (multi-select)
+  channels     String[] // channel penjualan (multi-select)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -126,16 +142,21 @@ model Store {
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
-  passwordHash String
+  passwordHash String? // opsional: user yang daftar via Google/Apple tidak punya password
   name         String
+  image        String? // foto profil (dari OAuth)
   role         Role      @default(KASIR)
   isActive     Boolean   @default(true)
+  onboardedAt  DateTime? // null = belum menyelesaikan onboarding
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   storeId String
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Akun OAuth yang ditautkan (Google/Apple)
+  accounts Account[]
 
   // Relasi balik: jejak siapa yang membuat data
   orders         Order[]
@@ -145,6 +166,20 @@ model User {
   stockOpnames   StockOpname[]
 
   @@index([storeId, role])
+}
+
+// Tautan akun pihak ketiga (Google / Apple) ke User.
+model Account {
+  id                String   @id @default(cuid())
+  provider          String // "google" | "apple"
+  providerAccountId String // ID unik user dari provider (sub)
+  createdAt         DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 // ============================================================================

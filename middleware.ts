@@ -5,18 +5,24 @@ import { canAccess } from "@/lib/rbac";
 // Middleware proteksi route + RBAC. Berjalan di Edge Runtime.
 // jose dipakai untuk verifikasi JWT (edge-safe).
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/signup"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Lewati path publik.
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await verifySession(token) : null;
+
+  // Path publik (login/signup): jika sudah login, lempar ke tujuan yang tepat.
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    if (session) {
+      const url = req.nextUrl.clone();
+      url.pathname = session.onboarded ? "/dashboard" : "/onboarding";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
 
   // Belum login -> arahkan ke /login dengan callback.
   if (!session) {
@@ -26,8 +32,25 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Sudah login tapi role tidak punya akses -> arahkan ke dasbor.
-  if (!canAccess(session.role, pathname)) {
+  const onOnboarding = pathname.startsWith("/onboarding");
+
+  // Belum onboarding -> paksa selesaikan dulu.
+  if (!session.onboarded && !onOnboarding) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/onboarding";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // Sudah onboarding tapi membuka /onboarding -> ke dasbor.
+  if (session.onboarded && onOnboarding) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // RBAC: cek akses per-role (route /onboarding bebas).
+  if (!onOnboarding && !canAccess(session.role, pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/dashboard";
     url.searchParams.set("error", "forbidden");
