@@ -20,6 +20,7 @@ import {
   CircleDollarSign,
   Receipt,
 } from "lucide-react";
+import RevenueChart from "@/components/charts/RevenueChart";
 
 /* -------------------------------------------------------------------------- */
 /* Tema: KUNING (aksen) · HITAM (solid/teks) · PUTIH (background)             */
@@ -80,10 +81,6 @@ const METRICS: Metric[] = [
     icon: AlertTriangle,
   },
 ];
-
-// Data dummy grafik tren (tinggi bar dalam %)
-const TREND_BARS = [42, 58, 35, 70, 52, 88, 64, 76, 49, 92, 68, 80];
-const TREND_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 type Order = {
   id: string;
@@ -302,19 +299,9 @@ function TrendChart() {
         </select>
       </div>
 
-      {/* Bar chart sederhana — ganti dengan Recharts/Chart.js saat integrasi */}
-      <div className="mt-6 flex h-56 items-end gap-2 sm:gap-3">
-        {TREND_BARS.map((h, i) => (
-          <div key={i} className="group flex flex-1 flex-col items-center gap-2">
-            <div className="relative flex w-full flex-1 items-end">
-              <div
-                className="w-full rounded-t-md bg-zinc-200 transition-all duration-300 group-hover:bg-yellow-400"
-                style={{ height: `${h}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-medium text-zinc-400">{TREND_LABELS[i]}</span>
-          </div>
-        ))}
+      {/* Grafik area Recharts — responsif & bertema kuning */}
+      <div className="mt-6">
+        <RevenueChart />
       </div>
     </div>
   );
