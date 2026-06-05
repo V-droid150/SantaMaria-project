@@ -31,15 +31,25 @@ Minimalis, catchy, dan modern dengan palet **Kuning · Hitam · Putih**.
 
 ## Status Pengembangan
 
-### ✅ Tahap 1 (selesai)
-- `prisma/schema.prisma` — skema database dengan RBAC, produk + varian, order, arus kas, hutang/piutang, dan audit trail stok (`StockMovement`) untuk pelacakan stok real-time.
-- `components/Dashboard.tsx` — UI Dasbor Utama (sidebar, metric cards, grafik tren, tabel pesanan) — responsif & sesuai tema.
+### ✅ Selesai
+- **Skema DB** — `prisma/schema.prisma`: RBAC, produk + varian, order, arus kas, hutang/piutang, audit trail stok (`StockMovement`).
+- **UI Dasbor** — `components/Dashboard.tsx`: sidebar, metric cards, grafik, tabel pesanan, responsif.
+- **Scaffolding Next.js 14** — App Router, Tailwind + token tema (Shadcn-ready), `lib/utils`, `lib/prisma`.
+- **Grafik Recharts** — `components/charts/RevenueChart.tsx` (area chart bertema kuning).
+- **Auth + RBAC** — session JWT (jose) di cookie httpOnly, `middleware.ts` proteksi route per-role, halaman `/login`, seed 3 user.
+- **Modul POS** — `/pos` terminal kasir + `/api/orders` (transaksi atomik: kurangi stok + `StockMovement` + `CashFlow`).
 
 ### ⏭️ Berikutnya
-- Inisialisasi project Next.js penuh + setup Shadcn UI
-- Auth + RBAC middleware
-- Modul POS, inventaris, keuangan
-- Integrasi grafik (Recharts) menggantikan placeholder
+- Modul Inventaris (CRUD produk/varian, stock opname UI)
+- Modul Keuangan (input arus kas, hutang/piutang)
+- Struk thermal, laporan & ekspor (Excel/PDF), CRM
+
+### Akun demo (setelah `npm run db:seed`)
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@santamaria.id | password123 |
+| Kasir | kasir@santamaria.id | password123 |
+| Staf Gudang | gudang@santamaria.id | password123 |
 
 ## Setup
 
