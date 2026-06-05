@@ -1,0 +1,45 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySession } from "@/lib/session";
+import { canAccess } from "@/lib/rbac";
+
+// Middleware proteksi route + RBAC. Berjalan di Edge Runtime.
+// jose dipakai untuk verifikasi JWT (edge-safe).
+
+const PUBLIC_PATHS = ["/login"];
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Lewati path publik.
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = token ? await verifySession(token) : null;
+
+  // Belum login -> arahkan ke /login dengan callback.
+  if (!session) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("from", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Sudah login tapi role tidak punya akses -> arahkan ke dasbor.
+  if (!canAccess(session.role, pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.searchParams.set("error", "forbidden");
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
+// Lindungi semua route kecuali aset statis & API auth.
+export const config = {
+  matcher: [
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

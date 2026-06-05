@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -19,6 +20,7 @@ import {
   AlertTriangle,
   CircleDollarSign,
   Receipt,
+  LogOut,
 } from "lucide-react";
 import RevenueChart from "@/components/charts/RevenueChart";
 
@@ -104,7 +106,22 @@ const STATUS_STYLE: Record<Order["status"], string> = {
   Pending: "bg-white text-zinc-900 border border-zinc-300",
 };
 
-export default function Dashboard() {
+type DashboardProps = {
+  userName?: string;
+  roleLabel?: string;
+};
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export default function Dashboard({ userName = "Pengguna", roleLabel = "Staf" }: DashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -150,11 +167,11 @@ export default function Dashboard() {
             </button>
             <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white py-1 pl-1 pr-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-400 text-sm font-bold text-zinc-900">
-                SM
+                {getInitials(userName)}
               </div>
               <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold leading-tight">Admin</p>
-                <p className="text-[11px] leading-tight text-zinc-500">Pemilik Toko</p>
+                <p className="text-sm font-semibold leading-tight">{userName}</p>
+                <p className="text-[11px] leading-tight text-zinc-500">{roleLabel}</p>
               </div>
             </div>
           </div>
@@ -197,6 +214,14 @@ export default function Dashboard() {
 /* Sidebar                                                                    */
 /* -------------------------------------------------------------------------- */
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-zinc-900 text-zinc-300 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
@@ -239,8 +264,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         })}
       </nav>
 
-      {/* Footer kartu upgrade */}
-      <div className="absolute inset-x-0 bottom-0 p-3">
+      {/* Footer: kartu upgrade + logout */}
+      <div className="absolute inset-x-0 bottom-0 space-y-2 p-3">
         <div className="rounded-2xl bg-zinc-800 p-4">
           <p className="text-sm font-semibold text-white">Paket Pro</p>
           <p className="mt-1 text-xs text-zinc-400">
@@ -250,6 +275,13 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             Upgrade
           </button>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          Keluar
+        </button>
       </div>
     </aside>
   );
