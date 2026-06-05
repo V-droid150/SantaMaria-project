@@ -39,10 +39,19 @@ Minimalis, catchy, dan modern dengan palet **Kuning · Hitam · Putih**.
 - **Auth + RBAC** — session JWT (jose) di cookie httpOnly, `middleware.ts` proteksi route per-role, halaman `/login`, seed 3 user.
 - **Modul POS** — `/pos` terminal kasir + `/api/orders` (transaksi atomik: kurangi stok + `StockMovement` + `CashFlow`).
 
+- **Multi-tenant + Onboarding** — siapa pun bisa **Sign Up** (email/password atau **Google/Apple**); tiap pendaftar otomatis membuat tokonya sendiri sebagai ADMIN, lalu mengisi **kuesioner onboarding** (jenis usaha, kategori, fokus produk, skala, tujuan, channel) sebelum masuk dashboard. Gating diatur middleware.
+
 ### ⏭️ Berikutnya
 - Modul Inventaris (CRUD produk/varian, stock opname UI)
 - Modul Keuangan (input arus kas, hutang/piutang)
 - Struk thermal, laporan & ekspor (Excel/PDF), CRM
+
+## Konfigurasi OAuth (opsional)
+
+Login Google/Apple aktif bila env diisi (lihat `.env.example`). Jika kosong, tombol tetap tampil tapi mengarahkan ke `/login?error=oauth_not_configured` — email/password tetap berfungsi.
+
+- **Google:** Google Cloud Console → OAuth client ID (Web). Redirect URI: `<APP_URL>/api/auth/oauth/google/callback`.
+- **Apple:** Apple Developer → Services ID + Key (.p8). Redirect URI: `<APP_URL>/api/auth/oauth/apple/callback`.
 
 ### Akun demo (setelah `npm run db:seed`)
 | Role | Email | Password |
