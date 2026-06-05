@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -32,17 +33,18 @@ import RevenueChart from "@/components/charts/RevenueChart";
 type NavItem = {
   label: string;
   icon: React.ElementType;
+  href: string;
   active?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dasbor", icon: LayoutDashboard, active: true },
-  { label: "Penjualan & POS", icon: ShoppingCart },
-  { label: "Inventaris", icon: Package },
-  { label: "Keuangan", icon: Wallet },
-  { label: "Pelanggan", icon: Users },
-  { label: "Laporan", icon: FileBarChart },
-  { label: "Pengaturan", icon: Settings },
+  { label: "Dasbor", icon: LayoutDashboard, href: "/dashboard", active: true },
+  { label: "Penjualan & POS", icon: ShoppingCart, href: "/pos" },
+  { label: "Inventaris", icon: Package, href: "/inventory" },
+  { label: "Keuangan", icon: Wallet, href: "/finance" },
+  { label: "Pelanggan", icon: Users, href: "/customers" },
+  { label: "Laporan", icon: FileBarChart, href: "/reports" },
+  { label: "Pengaturan", icon: Settings, href: "/settings" },
 ];
 
 type Metric = {
@@ -248,9 +250,9 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
-            <a
+            <Link
               key={item.label}
-              href="#"
+              href={item.href}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 item.active
                   ? "bg-yellow-400 text-zinc-900 shadow-sm"
@@ -259,7 +261,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             >
               <Icon className="h-5 w-5 shrink-0" />
               {item.label}
-            </a>
+            </Link>
           );
         })}
       </nav>
