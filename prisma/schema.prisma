@@ -1,0 +1,436 @@
+// ============================================================================
+// SantaMaria — UMKM Dashboard
+// Prisma Schema (PostgreSQL)
+// ----------------------------------------------------------------------------
+// Catatan desain:
+// - Semua nilai uang disimpan sebagai Decimal(14,2) agar bebas floating point.
+// - Stok dikelola di level ProductVariant (bukan Product) supaya pelacakan
+//   stok real-time akurat untuk produk ber-varian maupun tanpa varian.
+// - Setiap perubahan stok WAJIB melahirkan satu StockMovement (audit trail),
+//   sehingga "stok saat ini" selalu bisa direkonsiliasi dari histori.
+// - Modul keuangan (CashFlow) dipisah dari Order: penjualan menghasilkan
+//   CashFlow otomatis, tapi pemasukan/pengeluaran manual juga bisa dicatat.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  ADMIN // Akses penuh: pengaturan, laporan, keuangan, RBAC
+  KASIR // POS, lihat produk, kelola pesanan
+  STAF_GUDANG // Inventaris, stock opname, penerimaan stok
+}
+
+enum ProductType {
+  PHYSICAL // Produk fisik — mengurangi stok
+  DIGITAL // Produk digital — tidak mengurangi stok fisik
+}
+
+enum OrderStatus {
+  DRAFT // Keranjang/cart yang belum diselesaikan
+  PENDING // Menunggu pembayaran
+  PAID // Sudah dibayar
+  COMPLETED // Selesai / diserahkan
+  CANCELLED // Dibatalkan — stok dikembalikan
+  REFUNDED // Dikembalikan dananya
+}
+
+enum SalesChannel {
+  POS // Kasir di toko
+  ONLINE_STORE
+  MARKETPLACE // Tokopedia/Shopee/dll
+  WHATSAPP
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  BANK_TRANSFER
+  CARD
+  EWALLET
+  CREDIT // Kasbon / dibayar nanti (memunculkan Receivable)
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+// Arah arus kas
+enum CashFlowType {
+  INCOME // Pemasukan
+  EXPENSE // Pengeluaran
+}
+
+// Sumber/alasan perubahan stok
+enum StockMovementType {
+  PURCHASE // Pembelian / penerimaan barang
+  SALE // Terjual (dari Order)
+  RETURN // Retur masuk
+  ADJUSTMENT // Penyesuaian manual
+  OPNAME // Hasil stock opname
+  TRANSFER // Pindah lokasi/gudang
+}
+
+enum DebtType {
+  RECEIVABLE // Piutang — pelanggan berhutang ke kita
+  PAYABLE // Hutang — kita berhutang ke supplier
+}
+
+enum DebtStatus {
+  OPEN
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+// ============================================================================
+// RBAC & STORE
+// ============================================================================
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  taxRate   Decimal  @default(0) @db.Decimal(5, 2) // % pajak default
+  currency  String   @default("IDR")
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  products     Product[]
+  categories   Category[]
+  orders       Order[]
+  customers    Customer[]
+  cashFlows    CashFlow[]
+  debts        Debt[]
+  suppliers    Supplier[]
+  cashierShifts CashierShift[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(KASIR)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Relasi balik: jejak siapa yang membuat data
+  orders         Order[]
+  stockMovements StockMovement[]
+  cashFlows      CashFlow[]
+  shifts         CashierShift[]
+  stockOpnames   StockOpname[]
+
+  @@index([storeId, role])
+}
+
+// ============================================================================
+// INVENTARIS — KATALOG, VARIAN, STOK
+// ============================================================================
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products  Product[]
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, name])
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  type        ProductType @default(PHYSICAL)
+  imageUrl    String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Setiap produk punya >=1 varian. Produk tanpa "varian nyata" tetap
+  // memiliki satu varian default — sehingga harga & stok SELALU ada di varian.
+  variants ProductVariant[]
+
+  @@index([storeId, isActive])
+  @@index([storeId, categoryId])
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  name      String  @default("Default") // contoh: "Ukuran L - Merah"
+  sku       String?
+  barcode   String?
+  price     Decimal @db.Decimal(14, 2) // harga jual
+  costPrice Decimal @default(0) @db.Decimal(14, 2) // HPP untuk hitung laba
+
+  // Sumber kebenaran stok. Untuk produk DIGITAL biarkan stok besar/diabaikan.
+  stock        Int @default(0)
+  reorderPoint Int @default(0) // ambang batas notifikasi stok menipis
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+  opnameItems    StockOpnameItem[]
+
+  @@unique([productId, sku])
+  @@index([sku])
+  @@index([barcode])
+}
+
+// Audit trail stok. Satu baris = satu mutasi. "stock" pada ProductVariant
+// adalah cache angka berjalan; tabel ini adalah histori yang dapat diaudit.
+model StockMovement {
+  id        String            @id @default(cuid())
+  type      StockMovementType
+  quantity  Int // (+) menambah stok, (-) mengurangi stok
+  note      String?
+  createdAt DateTime          @default(now())
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  // Referensi opsional ke pesanan pemicu (untuk tipe SALE/RETURN)
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  // Siapa yang melakukan mutasi
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([variantId, createdAt])
+  @@index([orderId])
+}
+
+// Stock opname (penghitungan fisik). Header + item.
+model StockOpname {
+  id        String            @id @default(cuid())
+  note      String?
+  createdAt DateTime          @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  items StockOpnameItem[]
+}
+
+model StockOpnameItem {
+  id            String @id @default(cuid())
+  systemStock   Int // stok menurut sistem saat opname
+  physicalStock Int // stok hasil hitung fisik
+  difference    Int // physical - system (di-generate aplikasi)
+
+  opnameId  String
+  opname    StockOpname    @relation(fields: [opnameId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([opnameId])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  debts     Debt[]
+  createdAt DateTime @default(now())
+}
+
+// ============================================================================
+// CRM — PELANGGAN
+// ============================================================================
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  points    Int      @default(0) // poin loyalitas
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+  debts  Debt[] // piutang pelanggan
+
+  @@index([storeId])
+  @@index([phone])
+}
+
+// ============================================================================
+// PENJUALAN & POS
+// ============================================================================
+
+model Order {
+  id          String       @id @default(cuid())
+  orderNumber String       @unique // nomor struk, contoh: INV-20260605-0001
+  status      OrderStatus  @default(DRAFT)
+  channel     SalesChannel @default(POS)
+
+  // Ringkasan nilai (dihitung dari OrderItem, disimpan untuk laporan cepat)
+  subtotal      Decimal @default(0) @db.Decimal(14, 2)
+  discountTotal Decimal @default(0) @db.Decimal(14, 2)
+  taxTotal      Decimal @default(0) @db.Decimal(14, 2)
+  grandTotal    Decimal @default(0) @db.Decimal(14, 2)
+
+  paymentMethod PaymentMethod @default(CASH)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paidAmount    Decimal       @default(0) @db.Decimal(14, 2)
+
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Kasir/staf yang membuat pesanan
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  shiftId String?
+  shift   CashierShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  items          OrderItem[]
+  stockMovements StockMovement[] // mutasi stok akibat pesanan ini
+  cashFlows      CashFlow[] // pemasukan dari pesanan ini
+  debt           Debt? // jika dibayar kredit
+
+  @@index([storeId, status, createdAt])
+  @@index([storeId, channel])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  unitPrice Decimal @db.Decimal(14, 2) // snapshot harga saat transaksi
+  costPrice Decimal @default(0) @db.Decimal(14, 2) // snapshot HPP -> hitung laba
+  discount  Decimal @default(0) @db.Decimal(14, 2)
+  subtotal  Decimal @db.Decimal(14, 2) // (unitPrice * qty) - discount
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+// Shift kasir untuk laporan rekap & serah terima kas
+model CashierShift {
+  id           String    @id @default(cuid())
+  openingCash  Decimal   @default(0) @db.Decimal(14, 2)
+  closingCash  Decimal?  @db.Decimal(14, 2)
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  orders Order[]
+
+  @@index([storeId, openedAt])
+}
+
+// ============================================================================
+// KEUANGAN — ARUS KAS & HUTANG/PIUTANG
+// ============================================================================
+
+model CashFlow {
+  id          String       @id @default(cuid())
+  type        CashFlowType
+  amount      Decimal      @db.Decimal(14, 2)
+  category    String // contoh: "Penjualan", "Gaji", "Sewa", "Bahan Baku"
+  description String?
+  occurredAt  DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Jika arus kas berasal dari pesanan (income otomatis)
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, type, occurredAt])
+}
+
+model Debt {
+  id        String     @id @default(cuid())
+  type      DebtType
+  status    DebtStatus @default(OPEN)
+  amount    Decimal    @db.Decimal(14, 2)
+  paidAmount Decimal   @default(0) @db.Decimal(14, 2)
+  dueDate   DateTime?
+  note      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Piutang -> ke customer; Hutang -> ke supplier (salah satu terisi)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  // Piutang biasanya terkait satu pesanan kredit
+  orderId String? @unique
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, type, status])
+  @@index([dueDate])
+}
