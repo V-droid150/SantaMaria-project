@@ -13,6 +13,7 @@ import {
   Loader2,
   CheckCircle2,
   PackageX,
+  Printer,
 } from "lucide-react";
 
 export type PosProduct = {
@@ -58,6 +59,7 @@ export default function PosTerminal({
   const [payment, setPayment] = useState<(typeof PAYMENT_METHODS)[number]["value"]>("CASH");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   const categories = useMemo(
     () => ["Semua", ...Array.from(new Set(products.map((p) => p.category)))],
@@ -79,6 +81,11 @@ export default function PosTerminal({
   const total = subtotal + tax;
 
   function addToCart(p: PosProduct) {
+    // Mulai transaksi baru -> bersihkan notifikasi & struk sebelumnya.
+    if (toast || lastOrderId) {
+      setToast(null);
+      setLastOrderId(null);
+    }
     setCart((prev) => {
       const existing = prev.find((l) => l.variantId === p.variantId);
       if (existing) {
@@ -129,6 +136,7 @@ export default function PosTerminal({
         return;
       }
       setToast({ type: "ok", msg: `Transaksi berhasil · ${data.order.orderNumber}` });
+      setLastOrderId(data.order.id);
       setCart([]);
     } catch {
       setToast({ type: "err", msg: "Kesalahan jaringan" });
@@ -292,6 +300,18 @@ export default function PosTerminal({
               {toast.type === "ok" && <CheckCircle2 className="h-4 w-4" />}
               {toast.msg}
             </div>
+          )}
+
+          {/* Cetak struk transaksi terakhir */}
+          {lastOrderId && cart.length === 0 && (
+            <a
+              href={`/receipt/${lastOrderId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+            >
+              <Printer className="h-4 w-4" /> Cetak Struk
+            </a>
           )}
 
           {/* Metode pembayaran */}
