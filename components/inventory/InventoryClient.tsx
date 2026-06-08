@@ -1,0 +1,528 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  X,
+  Loader2,
+  Boxes,
+  AlertTriangle,
+} from "lucide-react";
+import { rupiah } from "@/lib/format";
+
+export type InvVariant = {
+  id: string;
+  name: string;
+  sku: string | null;
+  price: number;
+  costPrice: number;
+  stock: number;
+  reorderPoint: number;
+};
+export type InvProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: "PHYSICAL" | "DIGITAL";
+  category: string | null;
+  variants: InvVariant[];
+};
+
+type FormVariant = {
+  id?: string;
+  name: string;
+  sku: string;
+  price: string;
+  costPrice: string;
+  stock: string;
+  reorderPoint: string;
+};
+
+const emptyVariant = (): FormVariant => ({
+  name: "Default",
+  sku: "",
+  price: "",
+  costPrice: "",
+  stock: "0",
+  reorderPoint: "0",
+});
+
+export default function InventoryClient({
+  products,
+  categories,
+}: {
+  products: InvProduct[];
+  categories: string[];
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<InvProduct | null>(null);
+
+  const filtered = useMemo(
+    () =>
+      products.filter((p) =>
+        `${p.name} ${p.category ?? ""}`.toLowerCase().includes(query.toLowerCase())
+      ),
+    [products, query]
+  );
+
+  function openCreate() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+  function openEdit(p: InvProduct) {
+    setEditing(p);
+    setModalOpen(true);
+  }
+
+  async function handleDelete(p: InvProduct) {
+    if (!confirm(`Hapus produk "${p.name}"? Produk akan dinonaktifkan.`)) return;
+    const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+    if (res.ok) router.refresh();
+    else alert("Gagal menghapus produk");
+  }
+
+  const totalStock = (p: InvProduct) =>
+    p.type === "DIGITAL" ? null : p.variants.reduce((s, v) => s + v.stock, 0);
+  const priceLabel = (p: InvProduct) => {
+    const prices = p.variants.map((v) => v.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return min === max ? rupiah(min) : `${rupiah(min)} – ${rupiah(max)}`;
+  };
+  const isLow = (p: InvProduct) =>
+    p.type === "PHYSICAL" && p.variants.some((v) => v.stock <= v.reorderPoint);
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Inventaris</h1>
+          <p className="text-sm text-zinc-500">Kelola katalog produk, varian, dan stok.</p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
+        >
+          <Plus className="h-4 w-4" /> Tambah Produk
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cari produk atau kategori..."
+          className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/40"
+        />
+      </div>
+
+      {/* List */}
+      {products.length === 0 ? (
+        <EmptyState onAdd={openCreate} />
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-zinc-200 bg-white py-16 text-center text-sm text-zinc-400">
+          Tidak ada produk yang cocok dengan pencarian.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+                  <th className="px-5 py-3 font-semibold">Produk</th>
+                  <th className="px-5 py-3 font-semibold">Kategori</th>
+                  <th className="px-5 py-3 font-semibold">Tipe</th>
+                  <th className="px-5 py-3 font-semibold">Harga</th>
+                  <th className="px-5 py-3 font-semibold">Stok</th>
+                  <th className="px-5 py-3 text-right font-semibold">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {filtered.map((p) => {
+                  const stock = totalStock(p);
+                  return (
+                    <tr key={p.id} className="transition hover:bg-yellow-400/5">
+                      <td className="px-5 py-4">
+                        <p className="font-semibold text-zinc-900">{p.name}</p>
+                        <p className="text-xs text-zinc-400">
+                          {p.variants.length} varian
+                          {p.variants.length === 1 && p.variants[0].name === "Default"
+                            ? ""
+                            : ` · ${p.variants.map((v) => v.name).join(", ")}`}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4 text-zinc-500">{p.category ?? "—"}</td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            p.type === "PHYSICAL"
+                              ? "bg-zinc-100 text-zinc-600"
+                              : "bg-yellow-400/15 text-yellow-600"
+                          }`}
+                        >
+                          {p.type === "PHYSICAL" ? "Fisik" : "Digital"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 font-medium text-zinc-900">{priceLabel(p)}</td>
+                      <td className="px-5 py-4">
+                        {stock === null ? (
+                          <span className="text-zinc-400">∞</span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1 font-medium ${
+                              isLow(p) ? "text-yellow-600" : "text-zinc-700"
+                            }`}
+                          >
+                            {isLow(p) && <AlertTriangle className="h-3.5 w-3.5" />}
+                            {stock}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p)}
+                            className="rounded-lg p-2 text-zinc-500 transition hover:bg-red-50 hover:text-red-500"
+                            aria-label="Hapus"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {modalOpen && (
+        <ProductModal
+          product={editing}
+          categories={categories}
+          onClose={() => setModalOpen(false)}
+          onSaved={() => {
+            setModalOpen(false);
+            router.refresh();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-white py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400/15 text-yellow-500">
+        <Boxes className="h-7 w-7" />
+      </div>
+      <div>
+        <p className="font-semibold text-zinc-900">Belum ada produk</p>
+        <p className="mt-1 text-sm text-zinc-500">Tambahkan produk pertamamu untuk mulai berjualan.</p>
+      </div>
+      <button
+        onClick={onAdd}
+        className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
+      >
+        <Plus className="h-4 w-4" /> Tambah Produk
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- Modal Tambah/Edit Produk ---------------- */
+
+function ProductModal({
+  product,
+  categories,
+  onClose,
+  onSaved,
+}: {
+  product: InvProduct | null;
+  categories: string[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const isEdit = !!product;
+  const [name, setName] = useState(product?.name ?? "");
+  const [category, setCategory] = useState(product?.category ?? "");
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [type, setType] = useState<"PHYSICAL" | "DIGITAL">(product?.type ?? "PHYSICAL");
+  const [variants, setVariants] = useState<FormVariant[]>(
+    product
+      ? product.variants.map((v) => ({
+          id: v.id,
+          name: v.name,
+          sku: v.sku ?? "",
+          price: String(v.price),
+          costPrice: String(v.costPrice),
+          stock: String(v.stock),
+          reorderPoint: String(v.reorderPoint),
+        }))
+      : [emptyVariant()]
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function setVariant(i: number, patch: Partial<FormVariant>) {
+    setVariants((vs) => vs.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
+  }
+
+  async function save() {
+    setError(null);
+    if (!name.trim()) return setError("Nama produk wajib diisi");
+    const parsed = variants.map((v) => ({
+      id: v.id,
+      name: v.name.trim() || "Default",
+      sku: v.sku.trim(),
+      price: Number(v.price || 0),
+      costPrice: Number(v.costPrice || 0),
+      stock: Number(v.stock || 0),
+      reorderPoint: Number(v.reorderPoint || 0),
+    }));
+    if (parsed.some((v) => !(v.price >= 0) || Number.isNaN(v.price))) {
+      return setError("Harga varian harus berupa angka");
+    }
+
+    setSaving(true);
+    try {
+      const url = isEdit ? `/api/products/${product!.id}` : "/api/products";
+      const res = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description, type, categoryName: category, variants: parsed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Gagal menyimpan");
+        return;
+      }
+      onSaved();
+    } catch {
+      setError("Kesalahan jaringan");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white sm:rounded-2xl">
+        {/* Header modal */}
+        <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+          <h2 className="text-lg font-bold">{isEdit ? "Edit Produk" : "Tambah Produk"}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Nama produk *">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="contoh: Kopi Susu"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Kategori">
+              <input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="contoh: Minuman"
+                list="kategori-list"
+                className={inputCls}
+              />
+              <datalist id="kategori-list">
+                {categories.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </Field>
+          </div>
+
+          <Field label="Tipe produk">
+            <div className="flex gap-2">
+              {(["PHYSICAL", "DIGITAL"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setType(t)}
+                  className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
+                    type === t
+                      ? "border-yellow-400 bg-yellow-400/10 text-zinc-900"
+                      : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300"
+                  }`}
+                >
+                  {t === "PHYSICAL" ? "Fisik (punya stok)" : "Digital (tanpa stok)"}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Deskripsi (opsional)">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="Catatan produk..."
+              className={inputCls}
+            />
+          </Field>
+
+          {/* Varian */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-zinc-700">Varian & Harga</label>
+              <button
+                type="button"
+                onClick={() => setVariants((vs) => [...vs, emptyVariant()])}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 hover:text-zinc-900"
+              >
+                <Plus className="h-3.5 w-3.5" /> Tambah varian
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {variants.map((v, i) => (
+                <div key={i} className="rounded-xl border border-zinc-200 p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <input
+                      value={v.name}
+                      onChange={(e) => setVariant(i, { name: e.target.value })}
+                      placeholder="Nama varian (mis. Large)"
+                      className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-yellow-400"
+                    />
+                    {variants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setVariants((vs) => vs.filter((_, idx) => idx !== i))}
+                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                        aria-label="Hapus varian"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <MiniField label="Harga jual *">
+                      <input
+                        type="number"
+                        value={v.price}
+                        onChange={(e) => setVariant(i, { price: e.target.value })}
+                        placeholder="0"
+                        className={miniInputCls}
+                      />
+                    </MiniField>
+                    <MiniField label="Harga modal">
+                      <input
+                        type="number"
+                        value={v.costPrice}
+                        onChange={(e) => setVariant(i, { costPrice: e.target.value })}
+                        placeholder="0"
+                        className={miniInputCls}
+                      />
+                    </MiniField>
+                    <MiniField label="Stok">
+                      <input
+                        type="number"
+                        value={v.stock}
+                        onChange={(e) => setVariant(i, { stock: e.target.value })}
+                        disabled={type === "DIGITAL"}
+                        placeholder="0"
+                        className={`${miniInputCls} disabled:bg-zinc-100 disabled:text-zinc-400`}
+                      />
+                    </MiniField>
+                    <MiniField label="Stok min.">
+                      <input
+                        type="number"
+                        value={v.reorderPoint}
+                        onChange={(e) => setVariant(i, { reorderPoint: e.target.value })}
+                        disabled={type === "DIGITAL"}
+                        placeholder="0"
+                        className={`${miniInputCls} disabled:bg-zinc-100 disabled:text-zinc-400`}
+                      />
+                    </MiniField>
+                  </div>
+                  <input
+                    value={v.sku}
+                    onChange={(e) => setVariant(i, { sku: e.target.value })}
+                    placeholder="SKU / barcode (opsional)"
+                    className="mt-2 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-yellow-400"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 border-t border-zinc-200 px-5 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isEdit ? "Simpan Perubahan" : "Simpan Produk"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-400/40";
+const miniInputCls =
+  "w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-sm outline-none focus:border-yellow-400";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-zinc-700">{label}</label>
+      {children}
+    </div>
+  );
+}
+function MiniField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[11px] font-medium text-zinc-500">{label}</label>
+      {children}
+    </div>
+  );
+}

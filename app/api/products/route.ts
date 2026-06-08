@@ -1,0 +1,106 @@
+import { NextResponse } from "next/server";
+import { Prisma, ProductType, StockMovementType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+import { canAccess } from "@/lib/rbac";
+
+type VariantInput = {
+  name?: string;
+  sku?: string;
+  price: number;
+  costPrice?: number;
+  stock?: number;
+  reorderPoint?: number;
+};
+type Body = {
+  name?: string;
+  description?: string;
+  type?: ProductType;
+  categoryName?: string;
+  variants?: VariantInput[];
+};
+
+export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Tidak terautentikasi" }, { status: 401 });
+  if (!canAccess(session.role, "/inventory")) {
+    return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
+  }
+
+  let body: Body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Body tidak valid" }, { status: 400 });
+  }
+
+  const name = body.name?.trim();
+  if (!name) return NextResponse.json({ error: "Nama produk wajib diisi" }, { status: 400 });
+  const variants = (body.variants ?? []).filter((v) => v.price >= 0);
+  if (variants.length === 0) {
+    return NextResponse.json({ error: "Minimal satu varian dengan harga" }, { status: 400 });
+  }
+
+  const type = body.type === "DIGITAL" ? ProductType.DIGITAL : ProductType.PHYSICAL;
+
+  try {
+    const product = await prisma.$transaction(async (tx) => {
+      // Kategori (opsional) — upsert berdasarkan nama.
+      let categoryId: string | null = null;
+      const catName = body.categoryName?.trim();
+      if (catName) {
+        const cat = await tx.category.upsert({
+          where: { storeId_name: { storeId: session.storeId, name: catName } },
+          update: {},
+          create: { name: catName, storeId: session.storeId },
+        });
+        categoryId = cat.id;
+      }
+
+      const created = await tx.product.create({
+        data: {
+          name,
+          description: body.description?.trim() || null,
+          type,
+          storeId: session.storeId,
+          categoryId,
+          variants: {
+            create: variants.map((v) => ({
+              name: v.name?.trim() || "Default",
+              sku: v.sku?.trim() || null,
+              price: new Prisma.Decimal(v.price),
+              costPrice: new Prisma.Decimal(v.costPrice ?? 0),
+              stock: type === ProductType.PHYSICAL ? Math.max(0, Math.trunc(v.stock ?? 0)) : 0,
+              reorderPoint: Math.max(0, Math.trunc(v.reorderPoint ?? 0)),
+            })),
+          },
+        },
+        include: { variants: true },
+      });
+
+      // Catat stok awal sebagai StockMovement (audit) untuk produk fisik.
+      if (type === ProductType.PHYSICAL) {
+        for (const v of created.variants) {
+          if (v.stock > 0) {
+            await tx.stockMovement.create({
+              data: {
+                type: StockMovementType.ADJUSTMENT,
+                quantity: v.stock,
+                variantId: v.id,
+                userId: session.userId,
+                note: "Stok awal",
+              },
+            });
+          }
+        }
+      }
+
+      return created;
+    });
+
+    return NextResponse.json({ product }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Gagal membuat produk";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
