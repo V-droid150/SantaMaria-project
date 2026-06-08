@@ -60,9 +60,12 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Lindungi semua route kecuali aset statis & API auth.
+// Lindungi semua route HALAMAN. Semua /api dikecualikan karena tiap Route
+// Handler sudah memvalidasi session sendiri (login/signup/oauth bersifat publik,
+// onboarding/orders mengecek getSession). Jika /api ikut kena middleware,
+// request POST bisa salah dialihkan saat user belum onboarded.
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
