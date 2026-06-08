@@ -3,6 +3,7 @@ import { ProductFocus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { generateUniqueSlug } from "@/lib/slug";
 
 type Body = {
   storeName?: string;
@@ -35,11 +36,19 @@ export async function POST(req: Request) {
     : ProductFocus.PHYSICAL;
 
   // Simpan profil bisnis & tandai onboarding selesai (transaksi).
+  // Buat slug publik unik bila toko belum punya.
+  const current = await prisma.store.findUnique({
+    where: { id: session.storeId },
+    select: { slug: true },
+  });
+  const slug = current?.slug ?? (await generateUniqueSlug(storeName));
+
   const user = await prisma.$transaction(async (tx) => {
     await tx.store.update({
       where: { id: session.storeId },
       data: {
         name: storeName,
+        slug,
         businessType: body.businessType ?? null,
         category: body.category ?? null,
         productFocus: focus,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Store as StoreIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Store as StoreIcon, Link2, Copy, ExternalLink } from "lucide-react";
 import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type StoreSettings = {
@@ -15,13 +15,34 @@ export type StoreSettings = {
   businessType: string;
 };
 
-export default function SettingsClient({ initial }: { initial: StoreSettings }) {
+export default function SettingsClient({
+  initial,
+  slug,
+}: {
+  initial: StoreSettings;
+  slug: string | null;
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const publicUrl =
+    slug && typeof window !== "undefined" ? `${window.location.origin}/toko/${slug}` : null;
+
+  async function copyLink() {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* abaikan */
+    }
+  }
 
   function set<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -60,6 +81,49 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t("set.title")}</h1>
         <p className="text-sm text-zinc-500">{t("set.subtitle")}</p>
+      </div>
+
+      {/* Link toko publik */}
+      <div className="max-w-2xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-400/15 text-yellow-500">
+            <Link2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-bold">{t("set.publicLink")}</h2>
+            <p className="text-xs text-zinc-500">{t("set.publicLinkDesc")}</p>
+          </div>
+        </div>
+
+        {publicUrl ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              readOnly
+              value={publicUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-700 outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={copyLink}
+                className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
+              >
+                {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? t("set.copied") : t("set.copy")}
+              </button>
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400"
+              >
+                <ExternalLink className="h-4 w-4" /> {t("set.openLink")}
+              </a>
+            </div>
+          </div>
+        ) : (
+          <p className="rounded-xl bg-zinc-100 px-3 py-2.5 text-sm text-zinc-500">{t("set.noLink")}</p>
+        )}
       </div>
 
       <div className="max-w-2xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">

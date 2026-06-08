@@ -222,6 +222,12 @@ const id: Dict = {
   "set.tax": "Pajak / PPN (%)",
   "set.taxHint": "Dipakai otomatis menghitung pajak di kasir.",
   "set.save": "Simpan Perubahan",
+  "set.publicLink": "Link Toko Publik",
+  "set.publicLinkDesc": "Bagikan link ini ke pelanggan untuk melihat katalog produkmu (tanpa perlu login).",
+  "set.copy": "Salin",
+  "set.copied": "Tersalin!",
+  "set.openLink": "Buka",
+  "set.noLink": "Link akan dibuat setelah kamu menyelesaikan onboarding.",
 
   // Staf
   "stf.title": "Manajemen Staf",
@@ -479,6 +485,12 @@ const en: Dict = {
   "set.tax": "Tax / VAT (%)",
   "set.taxHint": "Used to automatically calculate tax at checkout.",
   "set.save": "Save Changes",
+  "set.publicLink": "Public Store Link",
+  "set.publicLinkDesc": "Share this link with customers to view your product catalog (no login needed).",
+  "set.copy": "Copy",
+  "set.copied": "Copied!",
+  "set.openLink": "Open",
+  "set.noLink": "The link will be created after you complete onboarding.",
 
   "stf.title": "Staff Management",
   "stf.subtitle": "Manage your team's accounts & access rights.",

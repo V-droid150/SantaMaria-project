@@ -13,6 +13,7 @@ async function main() {
     create: {
       id: "store-demo",
       name: "Toko SantaMaria",
+      slug: "toko-santamaria-demo",
       address: "Jl. Merdeka No. 1, Jakarta",
       phone: "+62 812-0000-0000",
       email: "halo@santamaria.id",

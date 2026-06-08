@@ -10,6 +10,11 @@ const PUBLIC_PATHS = ["/login", "/signup"];
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Halaman katalog toko bersifat publik (tanpa login) — lewati sepenuhnya.
+  if (pathname.startsWith("/toko/")) {
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await verifySession(token) : null;
 

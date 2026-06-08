@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 
   return (
     <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
-      <SettingsClient initial={data} />
+      <SettingsClient initial={data} slug={store.slug} />
     </AppShell>
   );
 }

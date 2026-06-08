@@ -111,6 +111,7 @@ enum ProductFocus {
 model Store {
   id        String   @id @default(cuid())
   name      String
+  slug      String?  @unique // alamat publik unik untuk halaman katalog (mis. /toko/kopi-senja-a1b2c)
   address   String?
   phone     String?
   email     String?
