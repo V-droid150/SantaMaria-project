@@ -21,6 +21,7 @@ import {
 import type { Role } from "@prisma/client";
 import { getInitials } from "@/lib/format";
 import { canAccess } from "@/lib/rbac";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const NAV_ITEMS = [
   { label: "Dasbor", icon: LayoutDashboard, href: "/dashboard" },
@@ -158,6 +159,9 @@ export default function AppShell({
 
         <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">{children}</main>
       </div>
+
+      {/* Chatbot AI mengambang */}
+      <ChatWidget />
     </div>
   );
 }
