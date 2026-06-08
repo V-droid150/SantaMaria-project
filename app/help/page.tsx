@@ -9,7 +9,7 @@ export default async function HelpPage() {
   if (!session) redirect("/login?from=/help");
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <FaqClient />
     </AppShell>
   );

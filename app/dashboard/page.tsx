@@ -47,7 +47,7 @@ export default async function DashboardPage() {
   const hasAlerts = data.lowStock.length > 0 || data.dueDebts.length > 0;
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       {/* Heading */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Halo, {firstName} 👋</h1>

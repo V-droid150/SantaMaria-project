@@ -49,7 +49,7 @@ export default async function FinancePage() {
   }));
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <FinanceClient
         rows={data}
         monthIncome={monthIncome}

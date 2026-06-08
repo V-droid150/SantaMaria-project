@@ -87,7 +87,7 @@ export default async function ReportsPage() {
   const hasData = items.length > 0;
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Laporan</h1>

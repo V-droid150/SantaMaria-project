@@ -37,7 +37,7 @@ export default async function CustomersPage() {
   }));
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <CustomersClient customers={data} />
     </AppShell>
   );

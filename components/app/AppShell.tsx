@@ -16,8 +16,11 @@ import {
   Bell,
   LogOut,
   HelpCircle,
+  UserCog,
 } from "lucide-react";
+import type { Role } from "@prisma/client";
 import { getInitials } from "@/lib/format";
+import { canAccess } from "@/lib/rbac";
 
 const NAV_ITEMS = [
   { label: "Dasbor", icon: LayoutDashboard, href: "/dashboard" },
@@ -26,6 +29,7 @@ const NAV_ITEMS = [
   { label: "Keuangan", icon: Wallet, href: "/finance" },
   { label: "Pelanggan", icon: Users, href: "/customers" },
   { label: "Laporan", icon: FileBarChart, href: "/reports" },
+  { label: "Staf", icon: UserCog, href: "/staff" },
   { label: "Pengaturan", icon: Settings, href: "/settings" },
   { label: "Bantuan & FAQ", icon: HelpCircle, href: "/help" },
 ];
@@ -35,15 +39,18 @@ const NAV_ITEMS = [
 export default function AppShell({
   userName,
   roleLabel,
+  role,
   children,
 }: {
   userName: string;
   roleLabel: string;
+  role: Role;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const navItems = NAV_ITEMS.filter((item) => canAccess(role, item.href));
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -78,7 +85,7 @@ export default function AppShell({
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (

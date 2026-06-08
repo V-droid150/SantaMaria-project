@@ -44,7 +44,7 @@ export default async function InventoryPage() {
   }));
 
   return (
-    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]}>
+    <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <InventoryClient products={data} categories={categories.map((c) => c.name)} />
     </AppShell>
   );

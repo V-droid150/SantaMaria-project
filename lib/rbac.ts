@@ -10,6 +10,7 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/customers", roles: ["ADMIN", "KASIR"] },
   { prefix: "/reports", roles: ["ADMIN"] },
   { prefix: "/settings", roles: ["ADMIN"] },
+  { prefix: "/staff", roles: ["ADMIN"] },
 ];
 
 // Cek apakah role boleh mengakses path tertentu.
