@@ -18,8 +18,17 @@ type Body = {
   description?: string;
   type?: ProductType;
   categoryName?: string;
+  image?: string | null;
   variants?: VariantInput[];
 };
+
+const MAX_IMAGE_LEN = 2_800_000;
+function sanitizeImage(image?: string | null): string | null {
+  if (!image) return null;
+  if (image.length > MAX_IMAGE_LEN) throw new Error("Ukuran foto terlalu besar");
+  if (!/^data:image\/|^https?:\/\//.test(image)) throw new Error("Format foto tidak valid");
+  return image;
+}
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
@@ -49,6 +58,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Minimal satu varian" }, { status: 400 });
   }
 
+  let imageUrl: string | null;
+  try {
+    imageUrl = sanitizeImage(body.image);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       let categoryId: string | null = null;
@@ -64,7 +80,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
       await tx.product.update({
         where: { id: existing.id },
-        data: { name, description: body.description?.trim() || null, type, categoryId },
+        data: { name, description: body.description?.trim() || null, type, categoryId, imageUrl },
       });
 
       const keptIds = new Set<string>();

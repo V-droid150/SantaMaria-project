@@ -15,6 +15,7 @@ import {
   X,
   Bell,
   LogOut,
+  HelpCircle,
 } from "lucide-react";
 import { getInitials } from "@/lib/format";
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { label: "Pelanggan", icon: Users, href: "/customers" },
   { label: "Laporan", icon: FileBarChart, href: "/reports" },
   { label: "Pengaturan", icon: Settings, href: "/settings" },
+  { label: "Bantuan & FAQ", icon: HelpCircle, href: "/help" },
 ];
 
 // Layout back-office: sidebar (hitam) + topbar + area konten.

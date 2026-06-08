@@ -17,8 +17,18 @@ type Body = {
   description?: string;
   type?: ProductType;
   categoryName?: string;
+  image?: string | null;
   variants?: VariantInput[];
 };
+
+// Batas ukuran foto (data URL base64) ~2MB untuk cegah payload berlebihan.
+const MAX_IMAGE_LEN = 2_800_000;
+function sanitizeImage(image?: string | null): string | null {
+  if (!image) return null;
+  if (image.length > MAX_IMAGE_LEN) throw new Error("Ukuran foto terlalu besar");
+  if (!/^data:image\/|^https?:\/\//.test(image)) throw new Error("Format foto tidak valid");
+  return image;
+}
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -43,6 +53,13 @@ export async function POST(req: Request) {
 
   const type = body.type === "DIGITAL" ? ProductType.DIGITAL : ProductType.PHYSICAL;
 
+  let imageUrl: string | null;
+  try {
+    imageUrl = sanitizeImage(body.image);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+
   try {
     const product = await prisma.$transaction(async (tx) => {
       // Kategori (opsional) — upsert berdasarkan nama.
@@ -62,6 +79,7 @@ export async function POST(req: Request) {
           name,
           description: body.description?.trim() || null,
           type,
+          imageUrl,
           storeId: session.storeId,
           categoryId,
           variants: {

@@ -23,6 +23,7 @@ export type PosProduct = {
   type: ProductType;
   price: number;
   stock: number;
+  image: string | null;
 };
 
 type CartLine = PosProduct & { quantity: number };
@@ -199,8 +200,13 @@ export default function PosTerminal({
                     disabled={soldOut}
                     className="group flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 text-left transition hover:border-yellow-400 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <div className="mb-3 flex h-16 w-full items-center justify-center rounded-xl bg-yellow-400/10 text-2xl">
-                      🛒
+                    <div className="mb-3 flex h-16 w-full items-center justify-center overflow-hidden rounded-xl bg-yellow-400/10 text-2xl">
+                      {p.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.image} alt={p.productName} className="h-full w-full object-cover" />
+                      ) : (
+                        "🛒"
+                      )}
                     </div>
                     <p className="line-clamp-2 text-sm font-semibold">{p.productName}</p>
                     <p className="text-xs text-zinc-400">{p.variantName}</p>

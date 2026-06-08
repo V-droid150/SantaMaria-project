@@ -11,8 +11,46 @@ import {
   Loader2,
   Boxes,
   AlertTriangle,
+  ImagePlus,
+  Package,
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
+
+// Hanya simpan digit, tampilkan dengan pemisah ribuan (300000 -> "300.000").
+function formatThousands(digits: string): string {
+  const clean = digits.replace(/\D/g, "");
+  if (!clean) return "";
+  return Number(clean).toLocaleString("id-ID");
+}
+function onlyDigits(s: string): string {
+  return s.replace(/\D/g, "");
+}
+
+// Kompres & ubah ukuran foto di browser sebelum disimpan (hemat ukuran).
+function compressImage(file: File, maxSize = 512): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas tidak didukung"));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = () => reject(new Error("Gagal memuat gambar"));
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error("Gagal membaca file"));
+    reader.readAsDataURL(file);
+  });
+}
 
 export type InvVariant = {
   id: string;
@@ -28,6 +66,7 @@ export type InvProduct = {
   name: string;
   description: string | null;
   type: "PHYSICAL" | "DIGITAL";
+  image: string | null;
   category: string | null;
   variants: InvVariant[];
 };
@@ -47,8 +86,8 @@ const emptyVariant = (): FormVariant => ({
   sku: "",
   price: "",
   costPrice: "",
-  stock: "0",
-  reorderPoint: "0",
+  stock: "",
+  reorderPoint: "",
 });
 
 export default function InventoryClient({
@@ -152,13 +191,29 @@ export default function InventoryClient({
                   return (
                     <tr key={p.id} className="transition hover:bg-yellow-400/5">
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-zinc-900">{p.name}</p>
-                        <p className="text-xs text-zinc-400">
-                          {p.variants.length} varian
-                          {p.variants.length === 1 && p.variants[0].name === "Default"
-                            ? ""
-                            : ` · ${p.variants.map((v) => v.name).join(", ")}`}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          {p.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={p.image}
+                              alt={p.name}
+                              className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-300">
+                              <Package className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-900">{p.name}</p>
+                            <p className="text-xs text-zinc-400">
+                              {p.variants.length} varian
+                              {p.variants.length === 1 && p.variants[0].name === "Default"
+                                ? ""
+                                : ` · ${p.variants.map((v) => v.name).join(", ")}`}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-zinc-500">{p.category ?? "—"}</td>
                       <td className="px-5 py-4">
@@ -280,11 +335,29 @@ function ProductModal({
         }))
       : [emptyVariant()]
   );
+  const [image, setImage] = useState<string | null>(product?.image ?? null);
+  const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function setVariant(i: number, patch: Partial<FormVariant>) {
     setVariants((vs) => vs.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
+  }
+
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // izinkan pilih file sama lagi
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return setError("File harus berupa gambar");
+    setError(null);
+    setImgLoading(true);
+    try {
+      setImage(await compressImage(file));
+    } catch {
+      setError("Gagal memproses foto");
+    } finally {
+      setImgLoading(false);
+    }
   }
 
   async function save() {
@@ -309,7 +382,7 @@ function ProductModal({
       const res = await fetch(url, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, type, categoryName: category, variants: parsed }),
+        body: JSON.stringify({ name, description, type, categoryName: category, image, variants: parsed }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -342,6 +415,39 @@ function ProductModal({
               {error}
             </div>
           )}
+
+          {/* Foto produk */}
+          <Field label="Foto produk">
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                {imgLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+                ) : image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image} alt="Pratinjau" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus className="h-6 w-6 text-zinc-300" />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400">
+                  <ImagePlus className="h-4 w-4" />
+                  {image ? "Ganti foto" : "Unggah foto"}
+                  <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                </label>
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() => setImage(null)}
+                    className="text-left text-xs font-medium text-red-500 hover:underline"
+                  >
+                    Hapus foto
+                  </button>
+                )}
+                <p className="text-[11px] text-zinc-400">JPG/PNG, otomatis dikompres.</p>
+              </div>
+            </div>
+          </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Nama produk *">
@@ -432,29 +538,32 @@ function ProductModal({
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <MiniField label="Harga jual *">
+                    <MiniField label="Harga jual (Rp) *">
                       <input
-                        type="number"
-                        value={v.price}
-                        onChange={(e) => setVariant(i, { price: e.target.value })}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatThousands(v.price)}
+                        onChange={(e) => setVariant(i, { price: onlyDigits(e.target.value) })}
                         placeholder="0"
                         className={miniInputCls}
                       />
                     </MiniField>
-                    <MiniField label="Harga modal">
+                    <MiniField label="Harga modal (Rp)">
                       <input
-                        type="number"
-                        value={v.costPrice}
-                        onChange={(e) => setVariant(i, { costPrice: e.target.value })}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatThousands(v.costPrice)}
+                        onChange={(e) => setVariant(i, { costPrice: onlyDigits(e.target.value) })}
                         placeholder="0"
                         className={miniInputCls}
                       />
                     </MiniField>
                     <MiniField label="Stok">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={v.stock}
-                        onChange={(e) => setVariant(i, { stock: e.target.value })}
+                        onChange={(e) => setVariant(i, { stock: onlyDigits(e.target.value) })}
                         disabled={type === "DIGITAL"}
                         placeholder="0"
                         className={`${miniInputCls} disabled:bg-zinc-100 disabled:text-zinc-400`}
@@ -462,9 +571,10 @@ function ProductModal({
                     </MiniField>
                     <MiniField label="Stok min.">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={v.reorderPoint}
-                        onChange={(e) => setVariant(i, { reorderPoint: e.target.value })}
+                        onChange={(e) => setVariant(i, { reorderPoint: onlyDigits(e.target.value) })}
                         disabled={type === "DIGITAL"}
                         placeholder="0"
                         className={`${miniInputCls} disabled:bg-zinc-100 disabled:text-zinc-400`}

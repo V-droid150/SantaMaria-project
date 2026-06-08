@@ -30,6 +30,7 @@ export default async function InventoryPage() {
     name: p.name,
     description: p.description,
     type: p.type,
+    image: p.imageUrl,
     category: p.category?.name ?? null,
     variants: p.variants.map((v) => ({
       id: v.id,

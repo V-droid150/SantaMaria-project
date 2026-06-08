@@ -29,6 +29,7 @@ export default async function PosPage() {
       type: p.type,
       price: Number(v.price),
       stock: v.stock,
+      image: p.imageUrl,
     }))
   );
 
