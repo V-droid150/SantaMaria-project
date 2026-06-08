@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -13,6 +14,7 @@ import {
   AlertTriangle,
   ImagePlus,
   Package,
+  ClipboardCheck,
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
 
@@ -145,12 +147,20 @@ export default function InventoryClient({
           <h1 className="text-2xl font-bold tracking-tight">Inventaris</h1>
           <p className="text-sm text-zinc-500">Kelola katalog produk, varian, dan stok.</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
-        >
-          <Plus className="h-4 w-4" /> Tambah Produk
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/opname"
+            className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400 hover:text-zinc-900"
+          >
+            <ClipboardCheck className="h-4 w-4" /> Stock Opname
+          </Link>
+          <button
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
+          >
+            <Plus className="h-4 w-4" /> Tambah Produk
+          </button>
+        </div>
       </div>
 
       {/* Search */}
