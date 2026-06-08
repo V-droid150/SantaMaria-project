@@ -17,8 +17,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // koneksi runtime (boleh via pooler)
+  directUrl = env("DIRECT_URL") // koneksi langsung untuk migrasi (Supabase/Neon)
 }
 
 // ============================================================================
