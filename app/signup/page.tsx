@@ -6,10 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Lock, Mail, User } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import OAuthButtons from "@/components/auth/OAuthButtons";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 function SignupForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useI18n();
   const from = params.get("from") || "/onboarding";
 
   const [name, setName] = useState("");
@@ -44,12 +47,15 @@ function SignupForm() {
   }
 
   return (
-    <AuthShell title="Buat akun" subtitle="Mulai kelola bisnismu — gratis & cepat">
+    <AuthShell title={t("auth.signupTitle")} subtitle={t("auth.signupSubtitle")}>
+      <div className="mb-4 flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <OAuthButtons from={from} />
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-400">
         <span className="h-px flex-1 bg-zinc-200" />
-        atau daftar dengan email
+        {t("auth.orSignupEmail")}
         <span className="h-px flex-1 bg-zinc-200" />
       </div>
 
@@ -62,7 +68,7 @@ function SignupForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="name" className="text-sm font-medium text-zinc-700">
-            Nama lengkap
+            {t("auth.name")}
           </label>
           <div className="relative">
             <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -81,7 +87,7 @@ function SignupForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium text-zinc-700">
-            Email
+            {t("auth.email")}
           </label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -100,7 +106,7 @@ function SignupForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="password" className="text-sm font-medium text-zinc-700">
-            Password
+            {t("auth.password")}
           </label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -124,7 +130,7 @@ function SignupForm() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {loading ? "Membuat akun..." : "Daftar"}
+          {loading ? t("auth.creating") : t("auth.signup")}
         </button>
 
         <p className="text-center text-[11px] leading-relaxed text-zinc-400">
@@ -133,9 +139,9 @@ function SignupForm() {
       </form>
 
       <p className="mt-6 text-center text-sm text-zinc-500">
-        Sudah punya akun?{" "}
+        {t("auth.haveAccount")}{" "}
         <Link href="/login" className="font-semibold text-zinc-900 underline-offset-2 hover:underline">
-          Masuk
+          {t("auth.login")}
         </Link>
       </p>
     </AuthShell>

@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Lock, Mail } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import OAuthButtons from "@/components/auth/OAuthButtons";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 const OAUTH_ERRORS: Record<string, string> = {
   oauth_not_configured: "Login sosial belum dikonfigurasi. Gunakan email & password.",
@@ -15,6 +17,7 @@ const OAUTH_ERRORS: Record<string, string> = {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useI18n();
   const from = params.get("from") || "/dashboard";
   const oauthError = params.get("error");
 
@@ -50,12 +53,15 @@ function LoginForm() {
   }
 
   return (
-    <AuthShell title="Masuk ke akun" subtitle="Selamat datang kembali di SantaMaria">
+    <AuthShell title={t("auth.loginTitle")} subtitle={t("auth.loginSubtitle")}>
+      <div className="mb-4 flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <OAuthButtons from={from} />
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-400">
         <span className="h-px flex-1 bg-zinc-200" />
-        atau dengan email
+        {t("auth.orEmail")}
         <span className="h-px flex-1 bg-zinc-200" />
       </div>
 
@@ -68,7 +74,7 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium text-zinc-700">
-            Email
+            {t("auth.email")}
           </label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -87,7 +93,7 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="password" className="text-sm font-medium text-zinc-700">
-            Password
+            {t("auth.password")}
           </label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -110,14 +116,14 @@ function LoginForm() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {loading ? "Memproses..." : "Masuk"}
+          {loading ? t("auth.processing") : t("auth.login")}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-zinc-500">
-        Belum punya akun?{" "}
+        {t("auth.noAccount")}{" "}
         <Link href="/signup" className="font-semibold text-zinc-900 underline-offset-2 hover:underline">
-          Daftar gratis
+          {t("auth.registerFree")}
         </Link>
       </p>
     </AuthShell>

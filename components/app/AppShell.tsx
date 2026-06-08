@@ -22,17 +22,19 @@ import type { Role } from "@prisma/client";
 import { getInitials } from "@/lib/format";
 import { canAccess } from "@/lib/rbac";
 import ChatWidget from "@/components/chat/ChatWidget";
+import { useI18n } from "@/components/i18n/LanguageProvider";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 
 const NAV_ITEMS = [
-  { label: "Dasbor", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Penjualan & POS", icon: ShoppingCart, href: "/pos" },
-  { label: "Inventaris", icon: Package, href: "/inventory" },
-  { label: "Keuangan", icon: Wallet, href: "/finance" },
-  { label: "Pelanggan", icon: Users, href: "/customers" },
-  { label: "Laporan", icon: FileBarChart, href: "/reports" },
-  { label: "Staf", icon: UserCog, href: "/staff" },
-  { label: "Pengaturan", icon: Settings, href: "/settings" },
-  { label: "Bantuan & FAQ", icon: HelpCircle, href: "/help" },
+  { labelKey: "nav.dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { labelKey: "nav.pos", icon: ShoppingCart, href: "/pos" },
+  { labelKey: "nav.inventory", icon: Package, href: "/inventory" },
+  { labelKey: "nav.finance", icon: Wallet, href: "/finance" },
+  { labelKey: "nav.customers", icon: Users, href: "/customers" },
+  { labelKey: "nav.reports", icon: FileBarChart, href: "/reports" },
+  { labelKey: "nav.staff", icon: UserCog, href: "/staff" },
+  { labelKey: "nav.settings", icon: Settings, href: "/settings" },
+  { labelKey: "nav.help", icon: HelpCircle, href: "/help" },
 ];
 
 // Layout back-office: sidebar (hitam) + topbar + area konten.
@@ -51,6 +53,7 @@ export default function AppShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
   const navItems = NAV_ITEMS.filter((item) => canAccess(role, item.href));
 
   async function handleLogout() {
@@ -91,7 +94,7 @@ export default function AppShell({
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
@@ -101,7 +104,7 @@ export default function AppShell({
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -113,7 +116,7 @@ export default function AppShell({
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            Keluar
+            {t("common.logout")}
           </button>
         </div>
       </aside>
@@ -139,6 +142,7 @@ export default function AppShell({
           </button>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher compact />
             <button
               className="relative rounded-lg p-2 text-zinc-700 hover:bg-zinc-100"
               aria-label="Notifikasi"
@@ -151,7 +155,7 @@ export default function AppShell({
               </div>
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-semibold leading-tight">{userName}</p>
-                <p className="text-[11px] leading-tight text-zinc-500">{roleLabel}</p>
+                <p className="text-[11px] leading-tight text-zinc-500">{t(`role.${role}`)}</p>
               </div>
             </div>
           </div>
