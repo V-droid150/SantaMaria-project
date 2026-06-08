@@ -10,21 +10,7 @@ import {
   YAxis,
 } from "recharts";
 
-// Data dummy — ganti dengan hasil query agregat order saat integrasi backend.
-const DATA = [
-  { month: "Jan", revenue: 21_000_000 },
-  { month: "Feb", revenue: 29_000_000 },
-  { month: "Mar", revenue: 17_500_000 },
-  { month: "Apr", revenue: 35_000_000 },
-  { month: "Mei", revenue: 26_000_000 },
-  { month: "Jun", revenue: 44_000_000 },
-  { month: "Jul", revenue: 32_000_000 },
-  { month: "Agu", revenue: 38_000_000 },
-  { month: "Sep", revenue: 24_500_000 },
-  { month: "Okt", revenue: 46_000_000 },
-  { month: "Nov", revenue: 34_000_000 },
-  { month: "Des", revenue: 40_000_000 },
-];
+export type RevenuePoint = { month: string; revenue: number };
 
 // yellow-400 sebagai warna aksen grafik (sesuai tema).
 const ACCENT = "#facc15";
@@ -61,10 +47,10 @@ function ChartTooltip({
   );
 }
 
-export default function RevenueChart() {
+export default function RevenueChart({ data }: { data: RevenuePoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={224}>
-      <AreaChart data={DATA} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <defs>
           <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={ACCENT} stopOpacity={0.35} />
