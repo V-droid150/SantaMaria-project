@@ -13,6 +13,7 @@ import {
   Lock,
 } from "lucide-react";
 import { rupiah, tanggal } from "@/lib/format";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type CashFlowRow = {
   id: string;
@@ -36,16 +37,17 @@ export default function FinanceClient({
   balance: number;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [modalOpen, setModalOpen] = useState(false);
 
   async function handleDelete(r: CashFlowRow) {
     if (r.fromOrder) return;
-    if (!confirm("Hapus catatan arus kas ini?")) return;
+    if (!confirm(t("fin.confirmDelete"))) return;
     const res = await fetch(`/api/cashflows/${r.id}`, { method: "DELETE" });
     if (res.ok) router.refresh();
     else {
       const d = await res.json().catch(() => ({}));
-      alert(d.error ?? "Gagal menghapus");
+      alert(d.error ?? t("common.networkError"));
     }
   }
 
@@ -53,27 +55,22 @@ export default function FinanceClient({
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Keuangan</h1>
-          <p className="text-sm text-zinc-500">Arus kas — pemasukan & pengeluaran toko.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("fin.title")}</h1>
+          <p className="text-sm text-zinc-500">{t("fin.subtitle")}</p>
         </div>
         <button
           onClick={() => setModalOpen(true)}
           className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
         >
-          <Plus className="h-4 w-4" /> Catat Transaksi
+          <Plus className="h-4 w-4" /> {t("fin.record")}
         </button>
       </div>
 
       {/* Ringkasan */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard
-          icon={ArrowUpCircle}
-          label="Pemasukan (bulan ini)"
-          value={rupiah(monthIncome)}
-          accent
-        />
-        <SummaryCard icon={ArrowDownCircle} label="Pengeluaran (bulan ini)" value={rupiah(monthExpense)} />
-        <SummaryCard icon={Wallet} label="Saldo (total)" value={rupiah(balance)} dark />
+        <SummaryCard icon={ArrowUpCircle} label={t("fin.incomeMonth")} value={rupiah(monthIncome)} accent />
+        <SummaryCard icon={ArrowDownCircle} label={t("fin.expenseMonth")} value={rupiah(monthExpense)} />
+        <SummaryCard icon={Wallet} label={t("fin.balance")} value={rupiah(balance)} dark />
       </section>
 
       {/* Daftar */}
@@ -83,10 +80,8 @@ export default function FinanceClient({
             <Wallet className="h-7 w-7" />
           </div>
           <div>
-            <p className="font-semibold text-zinc-900">Belum ada catatan keuangan</p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Penjualan dari kasir tercatat otomatis. Tambah pemasukan/pengeluaran manual di sini.
-            </p>
+            <p className="font-semibold text-zinc-900">{t("fin.empty")}</p>
+            <p className="mt-1 text-sm text-zinc-500">{t("fin.emptyDesc")}</p>
           </div>
         </div>
       ) : (
@@ -95,10 +90,10 @@ export default function FinanceClient({
             <table className="w-full min-w-[680px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <th className="px-5 py-3 font-semibold">Tanggal</th>
-                  <th className="px-5 py-3 font-semibold">Kategori</th>
-                  <th className="px-5 py-3 font-semibold">Keterangan</th>
-                  <th className="px-5 py-3 text-right font-semibold">Jumlah</th>
+                  <th className="px-5 py-3 font-semibold">{t("fin.colDate")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("fin.colCategory")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("fin.colDesc")}</th>
+                  <th className="px-5 py-3 text-right font-semibold">{t("fin.colAmount")}</th>
                   <th className="px-5 py-3"></th>
                 </tr>
               </thead>
@@ -110,7 +105,7 @@ export default function FinanceClient({
                       <span className="font-medium text-zinc-800">{r.category}</span>
                       {r.fromOrder && (
                         <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
-                          <Lock className="h-2.5 w-2.5" /> otomatis
+                          <Lock className="h-2.5 w-2.5" /> {t("fin.auto")}
                         </span>
                       )}
                     </td>
@@ -187,6 +182,7 @@ function SummaryCard({
 }
 
 function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -232,7 +228,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-2xl bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-lg font-bold">Catat Transaksi</h2>
+          <h2 className="text-lg font-bold">{t("fin.record")}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
             <X className="h-5 w-5" />
           </button>
@@ -256,7 +252,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
                   : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
               }`}
             >
-              Pemasukan
+              {t("fin.income")}
             </button>
             <button
               type="button"
@@ -267,12 +263,12 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
                   : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
               }`}
             >
-              Pengeluaran
+              {t("fin.expense")}
             </button>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Jumlah (Rp) *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("fin.amount")}</label>
             <input
               type="number"
               value={amount}
@@ -283,12 +279,12 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Kategori *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("fin.category")}</label>
             <input
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               list="cat-list"
-              placeholder="contoh: Bahan Baku"
+              placeholder={t("fin.categoryPh")}
               className={inputCls}
             />
             <datalist id="cat-list">
@@ -299,7 +295,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Tanggal</label>
+            <label className="text-sm font-medium text-zinc-700">{t("fin.date")}</label>
             <input
               type="date"
               value={occurredAt}
@@ -309,11 +305,11 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Keterangan (opsional)</label>
+            <label className="text-sm font-medium text-zinc-700">{t("fin.note")}</label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Catatan..."
+              placeholder={t("fin.notePh")}
               className={inputCls}
             />
           </div>
@@ -324,7 +320,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             onClick={onClose}
             className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             onClick={save}
@@ -332,7 +328,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan
+            {t("common.save")}
           </button>
         </div>
       </div>

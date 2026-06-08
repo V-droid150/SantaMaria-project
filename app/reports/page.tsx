@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { canAccess, ROLE_LABEL } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { rupiah, angka } from "@/lib/format";
+import { getServerT } from "@/lib/i18n-server";
 import AppShell from "@/components/app/AppShell";
 import ReportExport from "@/components/reports/ReportExport";
 
@@ -20,6 +21,7 @@ export default async function ReportsPage() {
   if (!session) redirect("/login?from=/reports");
   if (!canAccess(session.role, "/reports")) redirect("/dashboard?error=forbidden");
 
+  const { t } = getServerT();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const storeId = session.storeId;
@@ -90,8 +92,10 @@ export default async function ReportsPage() {
     <AppShell userName={session.name} roleLabel={ROLE_LABEL[session.role]} role={session.role}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Laporan</h1>
-          <p className="text-sm text-zinc-500">Ringkasan kinerja — {monthName}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("rep.title")}</h1>
+          <p className="text-sm text-zinc-500">
+            {t("rep.subtitle")} — {monthName}
+          </p>
         </div>
         <ReportExport
           monthName={monthName}
@@ -103,21 +107,21 @@ export default async function ReportsPage() {
       {!hasData ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-white py-16 text-center text-zinc-400">
           <TrendingUp className="h-9 w-9" />
-          <p className="text-sm">Belum ada penjualan bulan ini. Laporan akan muncul setelah ada transaksi.</p>
+          <p className="text-sm">{t("rep.empty")}</p>
         </div>
       ) : (
         <>
           {/* Laba / Rugi */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-            <h2 className="text-base font-bold">Laba / Rugi (bulan ini)</h2>
+            <h2 className="text-base font-bold">{t("rep.plTitle")}</h2>
             <div className="mt-4 space-y-2 text-sm">
-              <Row label="Omzet penjualan" value={rupiah(omzet)} />
-              <Row label="Harga pokok penjualan (HPP)" value={`− ${rupiah(hpp)}`} muted />
-              <Row label="Laba kotor" value={rupiah(labaKotor)} bold />
-              <Row label="Pengeluaran operasional" value={`− ${rupiah(pengeluaran)}`} muted />
+              <Row label={t("rep.omzet")} value={rupiah(omzet)} />
+              <Row label={t("rep.hpp")} value={`− ${rupiah(hpp)}`} muted />
+              <Row label={t("rep.grossProfit")} value={rupiah(labaKotor)} bold />
+              <Row label={t("rep.opex")} value={`− ${rupiah(pengeluaran)}`} muted />
               <div className="border-t border-dashed border-zinc-200 pt-2">
                 <Row
-                  label="Laba bersih"
+                  label={t("rep.netProfit")}
                   value={rupiah(labaBersih)}
                   bold
                   highlight={labaBersih >= 0}
@@ -131,7 +135,7 @@ export default async function ReportsPage() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Package className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-base font-bold">Produk Terlaris</h2>
+                <h2 className="text-base font-bold">{t("rep.bestSellers")}</h2>
               </div>
               <ul className="space-y-3">
                 {bestSellers.map((b, i) => (
@@ -141,7 +145,7 @@ export default async function ReportsPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{b.name}</p>
-                      <p className="text-xs text-zinc-500">{angka(b.qty)} terjual</p>
+                      <p className="text-xs text-zinc-500">{angka(b.qty)} {t("rep.sold")}</p>
                     </div>
                     <span className="text-sm font-semibold text-zinc-900">{rupiah(b.revenue)}</span>
                   </li>
@@ -153,14 +157,14 @@ export default async function ReportsPage() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Radio className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-base font-bold">Penjualan per Channel</h2>
+                <h2 className="text-base font-bold">{t("rep.perChannel")}</h2>
               </div>
               <ul className="space-y-3">
                 {channels.map((c, i) => (
                   <li key={i} className="flex items-center justify-between text-sm">
                     <div>
                       <p className="font-semibold text-zinc-800">{c.channel}</p>
-                      <p className="text-xs text-zinc-500">{angka(c.count)} transaksi</p>
+                      <p className="text-xs text-zinc-500">{angka(c.count)} {t("rep.tx")}</p>
                     </div>
                     <span className="font-semibold text-zinc-900">{rupiah(c.total)}</span>
                   </li>

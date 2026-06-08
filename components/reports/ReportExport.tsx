@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 // Ekspor laporan ringkas ke CSV (tanpa library tambahan).
 // CSV bisa dibuka di Excel/Google Sheets.
@@ -13,6 +14,7 @@ export default function ReportExport({
   labaRugi: { omzet: number; hpp: number; labaKotor: number; pengeluaran: number; labaBersih: number };
   bestSellers: { name: string; qty: number; revenue: number }[];
 }) {
+  const { t } = useI18n();
   function download() {
     const lines: string[] = [];
     lines.push(`Laporan SantaMaria;${monthName}`);
@@ -43,7 +45,7 @@ export default function ReportExport({
       onClick={download}
       className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400 hover:text-zinc-900"
     >
-      <Download className="h-4 w-4" /> Unduh CSV
+      <Download className="h-4 w-4" /> {t("rep.download")}
     </button>
   );
 }

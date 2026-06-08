@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 // Hanya simpan digit, tampilkan dengan pemisah ribuan (300000 -> "300.000").
 function formatThousands(digits: string): string {
@@ -100,6 +101,7 @@ export default function InventoryClient({
   categories: string[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<InvProduct | null>(null);
@@ -122,10 +124,10 @@ export default function InventoryClient({
   }
 
   async function handleDelete(p: InvProduct) {
-    if (!confirm(`Hapus produk "${p.name}"? Produk akan dinonaktifkan.`)) return;
+    if (!confirm(t("inv.confirmDelete"))) return;
     const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
     if (res.ok) router.refresh();
-    else alert("Gagal menghapus produk");
+    else alert(t("common.networkError"));
   }
 
   const totalStock = (p: InvProduct) =>
@@ -144,21 +146,21 @@ export default function InventoryClient({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Inventaris</h1>
-          <p className="text-sm text-zinc-500">Kelola katalog produk, varian, dan stok.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("inv.title")}</h1>
+          <p className="text-sm text-zinc-500">{t("inv.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Link
             href="/opname"
             className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400 hover:text-zinc-900"
           >
-            <ClipboardCheck className="h-4 w-4" /> Stock Opname
+            <ClipboardCheck className="h-4 w-4" /> {t("inv.opname")}
           </Link>
           <button
             onClick={openCreate}
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
           >
-            <Plus className="h-4 w-4" /> Tambah Produk
+            <Plus className="h-4 w-4" /> {t("inv.addProduct")}
           </button>
         </div>
       </div>
@@ -169,7 +171,7 @@ export default function InventoryClient({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari produk atau kategori..."
+          placeholder={t("inv.searchPh")}
           className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/40"
         />
       </div>
@@ -179,7 +181,7 @@ export default function InventoryClient({
         <EmptyState onAdd={openCreate} />
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-zinc-200 bg-white py-16 text-center text-sm text-zinc-400">
-          Tidak ada produk yang cocok dengan pencarian.
+          {t("inv.noMatch")}
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
@@ -187,12 +189,12 @@ export default function InventoryClient({
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <th className="px-5 py-3 font-semibold">Produk</th>
-                  <th className="px-5 py-3 font-semibold">Kategori</th>
-                  <th className="px-5 py-3 font-semibold">Tipe</th>
-                  <th className="px-5 py-3 font-semibold">Harga</th>
-                  <th className="px-5 py-3 font-semibold">Stok</th>
-                  <th className="px-5 py-3 text-right font-semibold">Aksi</th>
+                  <th className="px-5 py-3 font-semibold">{t("inv.colProduct")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("inv.colCategory")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("inv.colType")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("inv.colPrice")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("inv.colStock")}</th>
+                  <th className="px-5 py-3 text-right font-semibold">{t("inv.colAction")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -217,7 +219,7 @@ export default function InventoryClient({
                           <div className="min-w-0">
                             <p className="font-semibold text-zinc-900">{p.name}</p>
                             <p className="text-xs text-zinc-400">
-                              {p.variants.length} varian
+                              {p.variants.length} {t("inv.variant")}
                               {p.variants.length === 1 && p.variants[0].name === "Default"
                                 ? ""
                                 : ` · ${p.variants.map((v) => v.name).join(", ")}`}
@@ -234,7 +236,7 @@ export default function InventoryClient({
                               : "bg-yellow-400/15 text-yellow-600"
                           }`}
                         >
-                          {p.type === "PHYSICAL" ? "Fisik" : "Digital"}
+                          {p.type === "PHYSICAL" ? t("inv.physical") : t("inv.digital")}
                         </span>
                       </td>
                       <td className="px-5 py-4 font-medium text-zinc-900">{priceLabel(p)}</td>
@@ -295,20 +297,21 @@ export default function InventoryClient({
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-white py-16 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400/15 text-yellow-500">
         <Boxes className="h-7 w-7" />
       </div>
       <div>
-        <p className="font-semibold text-zinc-900">Belum ada produk</p>
-        <p className="mt-1 text-sm text-zinc-500">Tambahkan produk pertamamu untuk mulai berjualan.</p>
+        <p className="font-semibold text-zinc-900">{t("inv.empty")}</p>
+        <p className="mt-1 text-sm text-zinc-500">{t("inv.emptyDesc")}</p>
       </div>
       <button
         onClick={onAdd}
         className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
       >
-        <Plus className="h-4 w-4" /> Tambah Produk
+        <Plus className="h-4 w-4" /> {t("inv.addProduct")}
       </button>
     </div>
   );
@@ -327,6 +330,7 @@ function ProductModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const isEdit = !!product;
   const [name, setName] = useState(product?.name ?? "");
   const [category, setCategory] = useState(product?.category ?? "");
@@ -412,7 +416,7 @@ function ProductModal({
       <div className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white sm:rounded-2xl">
         {/* Header modal */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-lg font-bold">{isEdit ? "Edit Produk" : "Tambah Produk"}</h2>
+          <h2 className="text-lg font-bold">{isEdit ? t("inv.modalEdit") : t("inv.modalAdd")}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
             <X className="h-5 w-5" />
           </button>
@@ -427,14 +431,14 @@ function ProductModal({
           )}
 
           {/* Foto produk */}
-          <Field label="Foto produk">
+          <Field label={t("inv.photo")}>
             <div className="flex items-center gap-4">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
                 {imgLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
                 ) : image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image} alt="Pratinjau" className="h-full w-full object-cover" />
+                  <img src={image} alt="Preview" className="h-full w-full object-cover" />
                 ) : (
                   <ImagePlus className="h-6 w-6 text-zinc-300" />
                 )}
@@ -442,7 +446,7 @@ function ProductModal({
               <div className="flex flex-col gap-2">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400">
                   <ImagePlus className="h-4 w-4" />
-                  {image ? "Ganti foto" : "Unggah foto"}
+                  {image ? t("inv.changePhoto") : t("inv.uploadPhoto")}
                   <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
                 </label>
                 {image && (
@@ -451,28 +455,28 @@ function ProductModal({
                     onClick={() => setImage(null)}
                     className="text-left text-xs font-medium text-red-500 hover:underline"
                   >
-                    Hapus foto
+                    {t("inv.removePhoto")}
                   </button>
                 )}
-                <p className="text-[11px] text-zinc-400">JPG/PNG, otomatis dikompres.</p>
+                <p className="text-[11px] text-zinc-400">{t("inv.photoHint")}</p>
               </div>
             </div>
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Nama produk *">
+            <Field label={t("inv.name")}>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="contoh: Kopi Susu"
+                placeholder={t("inv.namePh")}
                 className={inputCls}
               />
             </Field>
-            <Field label="Kategori">
+            <Field label={t("inv.category")}>
               <input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="contoh: Minuman"
+                placeholder={t("inv.categoryPh")}
                 list="kategori-list"
                 className={inputCls}
               />
@@ -484,31 +488,31 @@ function ProductModal({
             </Field>
           </div>
 
-          <Field label="Tipe produk">
+          <Field label={t("inv.productType")}>
             <div className="flex gap-2">
-              {(["PHYSICAL", "DIGITAL"] as const).map((t) => (
+              {(["PHYSICAL", "DIGITAL"] as const).map((opt) => (
                 <button
-                  key={t}
+                  key={opt}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => setType(opt)}
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
-                    type === t
+                    type === opt
                       ? "border-yellow-400 bg-yellow-400/10 text-zinc-900"
                       : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300"
                   }`}
                 >
-                  {t === "PHYSICAL" ? "Fisik (punya stok)" : "Digital (tanpa stok)"}
+                  {opt === "PHYSICAL" ? t("inv.physicalLong") : t("inv.digitalLong")}
                 </button>
               ))}
             </div>
           </Field>
 
-          <Field label="Deskripsi (opsional)">
+          <Field label={t("inv.desc")}>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              placeholder="Catatan produk..."
+              placeholder={t("inv.descPh")}
               className={inputCls}
             />
           </Field>
@@ -516,13 +520,13 @@ function ProductModal({
           {/* Varian */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-zinc-700">Varian & Harga</label>
+              <label className="text-sm font-medium text-zinc-700">{t("inv.variantsPrice")}</label>
               <button
                 type="button"
                 onClick={() => setVariants((vs) => [...vs, emptyVariant()])}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 hover:text-zinc-900"
               >
-                <Plus className="h-3.5 w-3.5" /> Tambah varian
+                <Plus className="h-3.5 w-3.5" /> {t("inv.addVariant")}
               </button>
             </div>
 
@@ -533,7 +537,7 @@ function ProductModal({
                     <input
                       value={v.name}
                       onChange={(e) => setVariant(i, { name: e.target.value })}
-                      placeholder="Nama varian (mis. Large)"
+                      placeholder={t("inv.variantNamePh")}
                       className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-yellow-400"
                     />
                     {variants.length > 1 && (
@@ -548,7 +552,7 @@ function ProductModal({
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <MiniField label="Harga jual (Rp) *">
+                    <MiniField label={t("inv.priceSell")}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -558,7 +562,7 @@ function ProductModal({
                         className={miniInputCls}
                       />
                     </MiniField>
-                    <MiniField label="Harga modal (Rp)">
+                    <MiniField label={t("inv.priceCost")}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -568,7 +572,7 @@ function ProductModal({
                         className={miniInputCls}
                       />
                     </MiniField>
-                    <MiniField label="Stok">
+                    <MiniField label={t("inv.stock")}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -579,7 +583,7 @@ function ProductModal({
                         className={`${miniInputCls} disabled:bg-zinc-100 disabled:text-zinc-400`}
                       />
                     </MiniField>
-                    <MiniField label="Stok min.">
+                    <MiniField label={t("inv.stockMin")}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -594,7 +598,7 @@ function ProductModal({
                   <input
                     value={v.sku}
                     onChange={(e) => setVariant(i, { sku: e.target.value })}
-                    placeholder="SKU / barcode (opsional)"
+                    placeholder={t("inv.skuPh")}
                     className="mt-2 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-yellow-400"
                   />
                 </div>
@@ -609,7 +613,7 @@ function ProductModal({
             onClick={onClose}
             className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             onClick={save}
@@ -617,7 +621,7 @@ function ProductModal({
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isEdit ? "Simpan Perubahan" : "Simpan Produk"}
+            {isEdit ? t("inv.saveChanges") : t("inv.saveProduct")}
           </button>
         </div>
       </div>

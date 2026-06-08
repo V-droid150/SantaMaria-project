@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, Store as StoreIcon } from "lucide-react";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type StoreSettings = {
   name: string;
@@ -16,6 +17,7 @@ export type StoreSettings = {
 
 export default function SettingsClient({ initial }: { initial: StoreSettings }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +58,8 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
   return (
     <>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pengaturan</h1>
-        <p className="text-sm text-zinc-500">Kelola informasi toko & pajak.</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("set.title")}</h1>
+        <p className="text-sm text-zinc-500">{t("set.subtitle")}</p>
       </div>
 
       <div className="max-w-2xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
@@ -66,8 +68,8 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
             <StoreIcon className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="font-bold">Profil Toko</h2>
-            <p className="text-xs text-zinc-500">Tampil di struk & laporan.</p>
+            <h2 className="font-bold">{t("set.storeProfile")}</h2>
+            <p className="text-xs text-zinc-500">{t("set.storeProfileDesc")}</p>
           </div>
         </div>
 
@@ -79,23 +81,23 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
           )}
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Nama toko *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("set.storeName")}</label>
             <input value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Telepon</label>
+              <label className="text-sm font-medium text-zinc-700">{t("set.phone")}</label>
               <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Email</label>
+              <label className="text-sm font-medium text-zinc-700">{t("set.email")}</label>
               <input value={form.email} onChange={(e) => set("email", e.target.value)} className={inputCls} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Alamat</label>
+            <label className="text-sm font-medium text-zinc-700">{t("set.address")}</label>
             <textarea
               value={form.address}
               onChange={(e) => set("address", e.target.value)}
@@ -106,23 +108,23 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Kategori bisnis</label>
+              <label className="text-sm font-medium text-zinc-700">{t("set.category")}</label>
               <input
                 value={form.category}
                 onChange={(e) => set("category", e.target.value)}
-                placeholder="contoh: Kuliner"
+                placeholder={t("set.categoryPh")}
                 className={inputCls}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Pajak / PPN (%)</label>
+              <label className="text-sm font-medium text-zinc-700">{t("set.tax")}</label>
               <input
                 type="number"
                 value={form.taxRate}
                 onChange={(e) => set("taxRate", Number(e.target.value))}
                 className={inputCls}
               />
-              <p className="text-[11px] text-zinc-400">Dipakai otomatis menghitung pajak di kasir.</p>
+              <p className="text-[11px] text-zinc-400">{t("set.taxHint")}</p>
             </div>
           </div>
         </div>
@@ -134,11 +136,11 @@ export default function SettingsClient({ initial }: { initial: StoreSettings }) 
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan Perubahan
+            {t("set.save")}
           </button>
           {saved && (
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-yellow-600">
-              <CheckCircle2 className="h-4 w-4" /> Tersimpan
+              <CheckCircle2 className="h-4 w-4" /> {t("common.saved")}
             </span>
           )}
         </div>

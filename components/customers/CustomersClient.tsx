@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Pencil, Trash2, X, Loader2, Users, Phone, Mail } from "lucide-react";
 import { rupiah, angka, getInitials } from "@/lib/format";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type CustomerRow = {
   id: string;
@@ -18,6 +19,7 @@ export type CustomerRow = {
 
 export default function CustomersClient({ customers }: { customers: CustomerRow[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CustomerRow | null>(null);
@@ -31,18 +33,18 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
   );
 
   async function handleDelete(c: CustomerRow) {
-    if (!confirm(`Hapus pelanggan "${c.name}"?`)) return;
+    if (!confirm(t("cust.confirmDelete"))) return;
     const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
     if (res.ok) router.refresh();
-    else alert("Gagal menghapus");
+    else alert(t("common.networkError"));
   }
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pelanggan</h1>
-          <p className="text-sm text-zinc-500">Database pelanggan & riwayat transaksi.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("cust.title")}</h1>
+          <p className="text-sm text-zinc-500">{t("cust.subtitle")}</p>
         </div>
         <button
           onClick={() => {
@@ -51,7 +53,7 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
           }}
           className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
         >
-          <Plus className="h-4 w-4" /> Tambah Pelanggan
+          <Plus className="h-4 w-4" /> {t("cust.add")}
         </button>
       </div>
 
@@ -60,7 +62,7 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari nama, telepon, email..."
+          placeholder={t("cust.searchPh")}
           className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/40"
         />
       </div>
@@ -71,10 +73,8 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
             <Users className="h-7 w-7" />
           </div>
           <div>
-            <p className="font-semibold text-zinc-900">Belum ada pelanggan</p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Pelanggan bisa ditambah di sini atau otomatis saat transaksi.
-            </p>
+            <p className="font-semibold text-zinc-900">{t("cust.empty")}</p>
+            <p className="mt-1 text-sm text-zinc-500">{t("cust.emptyDesc")}</p>
           </div>
         </div>
       ) : (
@@ -83,12 +83,12 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <th className="px-5 py-3 font-semibold">Pelanggan</th>
-                  <th className="px-5 py-3 font-semibold">Kontak</th>
-                  <th className="px-5 py-3 font-semibold">Transaksi</th>
-                  <th className="px-5 py-3 font-semibold">Total Belanja</th>
-                  <th className="px-5 py-3 font-semibold">Poin</th>
-                  <th className="px-5 py-3 text-right font-semibold">Aksi</th>
+                  <th className="px-5 py-3 font-semibold">{t("cust.colCustomer")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("cust.colContact")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("cust.colTx")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("cust.colSpent")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("cust.colPoints")}</th>
+                  <th className="px-5 py-3 text-right font-semibold">{t("cust.colAction")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -119,7 +119,7 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
                     <td className="px-5 py-4 font-semibold text-zinc-900">{rupiah(c.totalSpent)}</td>
                     <td className="px-5 py-4">
                       <span className="inline-flex rounded-full bg-yellow-400/15 px-2.5 py-1 text-xs font-semibold text-yellow-600">
-                        {angka(c.points)} poin
+                        {angka(c.points)} {t("cust.points")}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -174,6 +174,7 @@ function CustomerModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const isEdit = !!customer;
   const [form, setForm] = useState({
     name: customer?.name ?? "",
@@ -186,7 +187,7 @@ function CustomerModal({
 
   async function save() {
     setError(null);
-    if (!form.name.trim()) return setError("Nama wajib diisi");
+    if (!form.name.trim()) return setError(t("cust.name"));
     setSaving(true);
     try {
       const res = await fetch(isEdit ? `/api/customers/${customer!.id}` : "/api/customers", {
@@ -214,7 +215,7 @@ function CustomerModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-2xl bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-lg font-bold">{isEdit ? "Edit Pelanggan" : "Tambah Pelanggan"}</h2>
+          <h2 className="text-lg font-bold">{isEdit ? t("cust.modalEdit") : t("cust.modalAdd")}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
             <X className="h-5 w-5" />
           </button>
@@ -227,16 +228,16 @@ function CustomerModal({
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Nama *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("cust.name")}</label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className={inputCls}
-              placeholder="Nama pelanggan"
+              placeholder={t("cust.namePh")}
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Telepon</label>
+            <label className="text-sm font-medium text-zinc-700">{t("cust.phone")}</label>
             <input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -245,7 +246,7 @@ function CustomerModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Email</label>
+            <label className="text-sm font-medium text-zinc-700">{t("cust.email")}</label>
             <input
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -254,13 +255,13 @@ function CustomerModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Alamat</label>
+            <label className="text-sm font-medium text-zinc-700">{t("cust.address")}</label>
             <textarea
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               rows={2}
               className={inputCls}
-              placeholder="Alamat..."
+              placeholder={t("cust.addressPh")}
             />
           </div>
         </div>
@@ -270,7 +271,7 @@ function CustomerModal({
             onClick={onClose}
             className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             onClick={save}
@@ -278,7 +279,7 @@ function CustomerModal({
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan
+            {t("common.save")}
           </button>
         </div>
       </div>

@@ -15,6 +15,7 @@ import {
   PackageX,
   Printer,
 } from "lucide-react";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type PosProduct = {
   variantId: string;
@@ -30,10 +31,10 @@ export type PosProduct = {
 type CartLine = PosProduct & { quantity: number };
 
 const PAYMENT_METHODS = [
-  { value: "CASH", label: "Tunai" },
-  { value: "QRIS", label: "QRIS" },
-  { value: "BANK_TRANSFER", label: "Transfer" },
-  { value: "EWALLET", label: "E-Wallet" },
+  { value: "CASH" },
+  { value: "QRIS" },
+  { value: "BANK_TRANSFER" },
+  { value: "EWALLET" },
 ] as const;
 
 function rupiah(n: number) {
@@ -53,6 +54,7 @@ export default function PosTerminal({
   products: PosProduct[];
   cashierName: string;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<string>("Semua");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -135,7 +137,7 @@ export default function PosTerminal({
         setToast({ type: "err", msg: data.error ?? "Gagal memproses" });
         return;
       }
-      setToast({ type: "ok", msg: `Transaksi berhasil · ${data.order.orderNumber}` });
+      setToast({ type: "ok", msg: `${t("pos.txSuccess")} · ${data.order.orderNumber}` });
       setLastOrderId(data.order.id);
       setCart([]);
     } catch {
@@ -159,15 +161,15 @@ export default function PosTerminal({
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="mr-auto">
-            <h1 className="text-lg font-bold">Kasir (POS)</h1>
-            <p className="text-xs text-zinc-500">Kasir: {cashierName}</p>
+            <h1 className="text-lg font-bold">{t("pos.title")}</h1>
+            <p className="text-xs text-zinc-500">{t("pos.cashier")}: {cashierName}</p>
           </div>
           <div className="relative w-44 sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari produk..."
+              placeholder={t("pos.searchPh")}
               className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2 pl-10 pr-3 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-400/40"
             />
           </div>
@@ -185,7 +187,7 @@ export default function PosTerminal({
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
-              {cat}
+              {cat === "Semua" ? t("pos.all") : cat}
             </button>
           ))}
         </div>
@@ -195,7 +197,7 @@ export default function PosTerminal({
           {filtered.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-zinc-400">
               <PackageX className="h-10 w-10" />
-              <p className="text-sm">Tidak ada produk.</p>
+              <p className="text-sm">{t("pos.noProducts")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
@@ -220,7 +222,7 @@ export default function PosTerminal({
                     <p className="text-xs text-zinc-400">{p.variantName}</p>
                     <p className="mt-2 text-sm font-bold text-zinc-900">{rupiah(p.price)}</p>
                     <p className="mt-0.5 text-[11px] text-zinc-400">
-                      {p.type === "PHYSICAL" ? `Stok: ${p.stock}` : "Digital"}
+                      {p.type === "PHYSICAL" ? `${t("pos.stock")}: ${p.stock}` : t("pos.digital")}
                     </p>
                   </button>
                 );
@@ -234,7 +236,7 @@ export default function PosTerminal({
       <aside className="flex h-2/5 w-full flex-col border-t border-zinc-200 bg-white lg:h-auto lg:w-96 lg:border-l lg:border-t-0">
         <div className="flex items-center gap-2 border-b border-zinc-200 px-5 py-4">
           <ShoppingCart className="h-5 w-5 text-yellow-500" />
-          <h2 className="font-bold">Keranjang</h2>
+          <h2 className="font-bold">{t("pos.cart")}</h2>
           <span className="ml-auto rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-zinc-900">
             {cart.reduce((n, l) => n + l.quantity, 0)}
           </span>
@@ -243,7 +245,7 @@ export default function PosTerminal({
         {/* Daftar item */}
         <div className="flex-1 overflow-y-auto px-3 py-2">
           {cart.length === 0 ? (
-            <p className="mt-8 text-center text-sm text-zinc-400">Keranjang masih kosong</p>
+            <p className="mt-8 text-center text-sm text-zinc-400">{t("pos.cartEmpty")}</p>
           ) : (
             <ul className="space-y-1">
               {cart.map((l) => (
@@ -310,7 +312,7 @@ export default function PosTerminal({
               rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
-              <Printer className="h-4 w-4" /> Cetak Struk
+              <Printer className="h-4 w-4" /> {t("pos.printReceipt")}
             </a>
           )}
 
@@ -326,22 +328,22 @@ export default function PosTerminal({
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                 }`}
               >
-                {m.label}
+                {t(`pay.${m.value}`)}
               </button>
             ))}
           </div>
 
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-zinc-500">
-              <span>Subtotal</span>
+              <span>{t("pos.subtotal")}</span>
               <span>{rupiah(subtotal)}</span>
             </div>
             <div className="flex justify-between text-zinc-500">
-              <span>Pajak ({TAX_RATE}%)</span>
+              <span>{t("pos.tax")} ({TAX_RATE}%)</span>
               <span>{rupiah(tax)}</span>
             </div>
             <div className="flex justify-between border-t border-dashed border-zinc-200 pt-2 text-base font-bold">
-              <span>Total</span>
+              <span>{t("pos.total")}</span>
               <span className="text-zinc-900">{rupiah(total)}</span>
             </div>
           </div>
@@ -352,7 +354,7 @@ export default function PosTerminal({
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 py-3 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {submitting ? "Memproses..." : "Bayar Sekarang"}
+            {submitting ? t("pos.processing") : t("pos.payNow")}
           </button>
         </div>
       </aside>

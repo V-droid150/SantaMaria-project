@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, X, Loader2, UserCog, UserX, ShieldCheck } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { getInitials } from "@/lib/format";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 export type StaffRow = {
   id: string;
@@ -15,11 +16,6 @@ export type StaffRow = {
   isSelf: boolean;
 };
 
-const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: "Administrator",
-  KASIR: "Kasir",
-  STAF_GUDANG: "Staf Gudang",
-};
 const ROLE_BADGE: Record<Role, string> = {
   ADMIN: "bg-zinc-900 text-yellow-400",
   KASIR: "bg-yellow-400 text-zinc-900",
@@ -28,12 +24,13 @@ const ROLE_BADGE: Record<Role, string> = {
 
 export default function StaffClient({ staff }: { staff: StaffRow[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffRow | null>(null);
 
   async function toggleActive(s: StaffRow) {
     if (s.isSelf) return;
-    if (s.isActive && !confirm(`Nonaktifkan akun "${s.name}"?`)) return;
+    if (s.isActive && !confirm(t("stf.confirmDeactivate"))) return;
     const res = await fetch(`/api/staff/${s.id}`, {
       method: s.isActive ? "DELETE" : "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -42,7 +39,7 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
     if (res.ok) router.refresh();
     else {
       const d = await res.json().catch(() => ({}));
-      alert(d.error ?? "Gagal memperbarui");
+      alert(d.error ?? t("common.networkError"));
     }
   }
 
@@ -50,8 +47,8 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Staf</h1>
-          <p className="text-sm text-zinc-500">Kelola akun & hak akses tim tokomu.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("stf.title")}</h1>
+          <p className="text-sm text-zinc-500">{t("stf.subtitle")}</p>
         </div>
         <button
           onClick={() => {
@@ -60,15 +57,15 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
           }}
           className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300"
         >
-          <Plus className="h-4 w-4" /> Tambah Staf
+          <Plus className="h-4 w-4" /> {t("stf.add")}
         </button>
       </div>
 
       {/* Penjelasan role */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <RoleInfo title="Administrator" desc="Akses penuh: semua menu & pengaturan." />
-        <RoleInfo title="Kasir" desc="Kasir/POS, pesanan, pelanggan." />
-        <RoleInfo title="Staf Gudang" desc="Inventaris & stok saja." />
+        <RoleInfo title={t("role.ADMIN")} desc={t("stf.adminDesc")} />
+        <RoleInfo title={t("role.KASIR")} desc={t("stf.kasirDesc")} />
+        <RoleInfo title={t("role.STAF_GUDANG")} desc={t("stf.gudangDesc")} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
@@ -76,11 +73,11 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                <th className="px-5 py-3 font-semibold">Nama</th>
-                <th className="px-5 py-3 font-semibold">Email</th>
-                <th className="px-5 py-3 font-semibold">Peran</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 text-right font-semibold">Aksi</th>
+                <th className="px-5 py-3 font-semibold">{t("stf.colName")}</th>
+                <th className="px-5 py-3 font-semibold">{t("stf.colEmail")}</th>
+                <th className="px-5 py-3 font-semibold">{t("stf.colRole")}</th>
+                <th className="px-5 py-3 font-semibold">{t("stf.colStatus")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{t("stf.colAction")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -93,14 +90,14 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
                       </div>
                       <span className="font-semibold text-zinc-900">
                         {s.name}
-                        {s.isSelf && <span className="ml-2 text-xs font-normal text-zinc-400">(Anda)</span>}
+                        {s.isSelf && <span className="ml-2 text-xs font-normal text-zinc-400">{t("stf.you")}</span>}
                       </span>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-zinc-500">{s.email}</td>
                   <td className="px-5 py-4">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${ROLE_BADGE[s.role]}`}>
-                      {ROLE_LABEL[s.role]}
+                      {t(`role.${s.role}`)}
                     </span>
                   </td>
                   <td className="px-5 py-4">
@@ -110,7 +107,7 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
                       }`}
                     >
                       {s.isActive ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
-                      {s.isActive ? "Aktif" : "Nonaktif"}
+                      {s.isActive ? t("stf.active") : t("stf.inactive")}
                     </span>
                   </td>
                   <td className="px-5 py-4">
@@ -134,7 +131,7 @@ export default function StaffClient({ staff }: { staff: StaffRow[] }) {
                               : "text-yellow-600 hover:bg-yellow-50"
                           }`}
                         >
-                          {s.isActive ? "Nonaktifkan" : "Aktifkan"}
+                          {s.isActive ? t("stf.deactivate") : t("stf.activate")}
                         </button>
                       )}
                     </div>
@@ -183,6 +180,7 @@ function StaffModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const isEdit = !!staff;
   const [name, setName] = useState(staff?.name ?? "");
   const [email, setEmail] = useState(staff?.email ?? "");
@@ -228,7 +226,7 @@ function StaffModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-2xl bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-lg font-bold">{isEdit ? "Edit Staf" : "Tambah Staf"}</h2>
+          <h2 className="text-lg font-bold">{isEdit ? t("stf.modalEdit") : t("stf.modalAdd")}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
             <X className="h-5 w-5" />
           </button>
@@ -241,11 +239,11 @@ function StaffModal({
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Nama *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("stf.name")}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Email {isEdit ? "" : "*"}</label>
+            <label className="text-sm font-medium text-zinc-700">{t("cust.email")} {isEdit ? "" : "*"}</label>
             <input
               type="email"
               value={email}
@@ -256,21 +254,21 @@ function StaffModal({
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-zinc-700">
-              {isEdit ? "Password baru (opsional)" : "Password *"}
+              {isEdit ? t("stf.passwordNew") : t("stf.password")}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isEdit ? "Kosongkan jika tidak diubah" : "Min. 8 karakter"}
+              placeholder={isEdit ? t("stf.passwordNewPh") : t("stf.passwordPh")}
               className={inputCls}
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Peran *</label>
+            <label className="text-sm font-medium text-zinc-700">{t("stf.role")}</label>
             {staff?.isSelf ? (
               <p className="rounded-xl bg-zinc-100 px-3 py-2.5 text-sm text-zinc-500">
-                Peran akun sendiri tidak bisa diubah.
+                {t("stf.roleLocked")}
               </p>
             ) : (
               <div className="grid grid-cols-3 gap-2">
@@ -285,7 +283,7 @@ function StaffModal({
                         : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
                     }`}
                   >
-                    {ROLE_LABEL[r]}
+                    {t(`role.${r}`)}
                   </button>
                 ))}
               </div>
@@ -298,7 +296,7 @@ function StaffModal({
             onClick={onClose}
             className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             onClick={save}
@@ -306,7 +304,7 @@ function StaffModal({
             className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan
+            {t("common.save")}
           </button>
         </div>
       </div>
