@@ -127,6 +127,13 @@ model Store {
   goals        String[] // tujuan pakai aplikasi (multi-select)
   channels     String[] // channel penjualan (multi-select)
 
+  // ---- Rekening/pembayaran penjual (uang masuk ke penjual) ----
+  payoutBank     String? // nama bank / e-wallet (mis. "BCA", "DANA")
+  payoutBankCode String? // kode bank utk disbursement otomatis (mis. "014")
+  payoutAccount  String? // no rekening / no e-wallet
+  payoutName     String? // nama pemilik rekening
+  qrisImageUrl   String? // gambar QRIS statis (untuk transfer manual)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -356,6 +363,8 @@ model Order {
   paymentMethod PaymentMethod @default(CASH)
   paymentStatus PaymentStatus @default(UNPAID)
   paidAmount    Decimal       @default(0) @db.Decimal(14, 2)
+
+  paymentProofUrl String? // bukti transfer (model pembayaran manual)
 
   note      String?
   createdAt DateTime @default(now())

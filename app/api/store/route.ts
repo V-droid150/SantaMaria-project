@@ -12,6 +12,11 @@ type Body = {
   taxRate?: number;
   category?: string;
   businessType?: string;
+  payoutBank?: string;
+  payoutBankCode?: string;
+  payoutAccount?: string;
+  payoutName?: string;
+  qrisImageUrl?: string | null;
 };
 
 export async function PATCH(req: Request) {
@@ -44,6 +49,16 @@ export async function PATCH(req: Request) {
       taxRate: new Prisma.Decimal(taxRate),
       category: body.category?.trim() || null,
       businessType: body.businessType?.trim() || null,
+      payoutBank: body.payoutBank?.trim() || null,
+      payoutBankCode: body.payoutBankCode?.trim() || null,
+      payoutAccount: body.payoutAccount?.trim() || null,
+      payoutName: body.payoutName?.trim() || null,
+      qrisImageUrl:
+        body.qrisImageUrl === undefined
+          ? undefined
+          : body.qrisImageUrl && /^data:image\/|^https?:\/\//.test(body.qrisImageUrl)
+            ? body.qrisImageUrl
+            : null,
     },
   });
 

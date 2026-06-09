@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { isMidtransConfigured } from "@/lib/midtrans";
 import PublicStoreClient, { type PubProduct } from "@/components/store/PublicStoreClient";
 
 type Params = { params: { slug: string } };
@@ -25,6 +26,10 @@ export default async function PublicStorePage({ params }: Params) {
       address: true,
       phone: true,
       category: true,
+      payoutBank: true,
+      payoutAccount: true,
+      payoutName: true,
+      qrisImageUrl: true,
       products: {
         where: { isActive: true },
         orderBy: { name: "asc" },
@@ -64,6 +69,8 @@ export default async function PublicStorePage({ params }: Params) {
       })),
     }));
 
+  const hasManual = Boolean(store.payoutBank || store.payoutAccount || store.qrisImageUrl);
+
   return (
     <PublicStoreClient
       store={{
@@ -74,6 +81,14 @@ export default async function PublicStorePage({ params }: Params) {
         category: store.category,
       }}
       products={products}
+      payment={{
+        autoEnabled: isMidtransConfigured(),
+        manualEnabled: hasManual,
+        bank: store.payoutBank,
+        account: store.payoutAccount,
+        accountName: store.payoutName,
+        qris: store.qrisImageUrl,
+      }}
     />
   );
 }

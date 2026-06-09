@@ -57,6 +57,39 @@ type StoreInfo = {
   category: string | null;
 };
 
+export type PaymentInfo = {
+  autoEnabled: boolean;
+  manualEnabled: boolean;
+  bank: string | null;
+  account: string | null;
+  accountName: string | null;
+  qris: string | null;
+};
+
+// Kompres gambar bukti transfer sebelum dikirim (base64).
+function compressImage(file: File, maxSize = 900): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("no ctx"));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = () => reject(new Error("img"));
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error("read"));
+    reader.readAsDataURL(file);
+  });
+}
+
 type CartLine = {
   variantId: string;
   productName: string;
@@ -71,14 +104,20 @@ type CartLine = {
 export default function PublicStoreClient({
   store,
   products,
+  payment,
 }: {
   store: StoreInfo;
   products: PubProduct[];
+  payment: PaymentInfo;
 }) {
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [selected, setSelected] = useState<PubProduct | null>(null);
   const [panel, setPanel] = useState<"cart" | "checkout" | "success" | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", address: "", note: "" });
+  const [payMethod, setPayMethod] = useState<"auto" | "manual">(
+    payment.autoEnabled ? "auto" : "manual"
+  );
+  const [proof, setProof] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ orderNumber: string; total: number; paid?: boolean } | null>(
@@ -140,6 +179,8 @@ export default function PublicStoreClient({
           items: lines.map((l) => ({ variantId: l.variantId, quantity: l.qty })),
           customer: { name: form.name, phone: form.phone, address: form.address },
           note: form.note,
+          payMethod,
+          proof: payMethod === "manual" ? proof : undefined,
         }),
       });
       const data = await res.json();
@@ -319,6 +360,11 @@ export default function PublicStoreClient({
                 subtotal={subtotal}
                 form={form}
                 setForm={setForm}
+                payment={payment}
+                payMethod={payMethod}
+                setPayMethod={setPayMethod}
+                proof={proof}
+                setProof={setProof}
                 error={error}
                 submitting={submitting}
                 onSubmit={placeOrder}
@@ -534,6 +580,11 @@ function CheckoutView({
   subtotal,
   form,
   setForm,
+  payment,
+  payMethod,
+  setPayMethod,
+  proof,
+  setProof,
   error,
   submitting,
   onSubmit,
@@ -542,10 +593,25 @@ function CheckoutView({
   subtotal: number;
   form: { name: string; phone: string; address: string; note: string };
   setForm: (f: { name: string; phone: string; address: string; note: string }) => void;
+  payment: PaymentInfo;
+  payMethod: "auto" | "manual";
+  setPayMethod: (m: "auto" | "manual") => void;
+  proof: string | null;
+  setProof: (p: string | null) => void;
   error: string | null;
   submitting: boolean;
   onSubmit: () => void;
 }) {
+  async function onProof(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !file.type.startsWith("image/")) return;
+    try {
+      setProof(await compressImage(file));
+    } catch {
+      /* abaikan */
+    }
+  }
   const inputCls =
     "w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-400/40";
   return (
@@ -593,6 +659,73 @@ function CheckoutView({
             placeholder="mis. tanpa gula, warna merah..."
             className={inputCls}
           />
+        </div>
+
+        {/* Metode pembayaran */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700">Metode pembayaran</label>
+          {payment.autoEnabled && payment.manualEnabled && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPayMethod("auto")}
+                className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
+                  payMethod === "auto"
+                    ? "border-yellow-400 bg-yellow-400/10 text-zinc-900"
+                    : "border-zinc-200 text-zinc-500"
+                }`}
+              >
+                Bayar Otomatis
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayMethod("manual")}
+                className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
+                  payMethod === "manual"
+                    ? "border-yellow-400 bg-yellow-400/10 text-zinc-900"
+                    : "border-zinc-200 text-zinc-500"
+                }`}
+              >
+                Transfer Manual
+              </button>
+            </div>
+          )}
+          {payMethod === "auto" && (
+            <p className="text-xs text-zinc-500">
+              Bayar via QRIS / VA / e-wallet / kartu lewat popup pembayaran.
+            </p>
+          )}
+          {payMethod === "manual" && (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 text-sm">
+              {payment.manualEnabled ? (
+                <>
+                  <p className="font-semibold text-zinc-800">Transfer ke:</p>
+                  {payment.bank && (
+                    <p className="text-zinc-600">
+                      {payment.bank}
+                      {payment.account ? ` · ${payment.account}` : ""}
+                    </p>
+                  )}
+                  {payment.accountName && <p className="text-zinc-600">a.n. {payment.accountName}</p>}
+                  {payment.qris && (
+                    <div className="mt-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={payment.qris} alt="QRIS" className="h-40 w-40 rounded-lg border border-zinc-200 object-contain" />
+                    </div>
+                  )}
+                  <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:border-yellow-400">
+                    📎 {proof ? "Ganti bukti transfer" : "Unggah bukti transfer (opsional)"}
+                    <input type="file" accept="image/*" onChange={onProof} className="hidden" />
+                  </label>
+                  {proof && <p className="mt-1 text-[11px] text-yellow-600">Bukti terlampir ✓</p>}
+                </>
+              ) : (
+                <p className="text-zinc-500">
+                  Penjual akan menghubungimu untuk pembayaran setelah pesanan dibuat.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Ringkasan */}

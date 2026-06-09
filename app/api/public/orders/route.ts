@@ -13,7 +13,16 @@ type Body = {
   items?: ItemIn[];
   customer?: { name?: string; phone?: string; address?: string };
   note?: string;
+  payMethod?: "auto" | "manual";
+  proof?: string | null;
 };
+
+function sanitizeProof(p?: string | null): string | null {
+  if (!p) return null;
+  if (p.length > 2_800_000) return null; // bukti terlalu besar -> abaikan
+  if (!/^data:image\/|^https?:\/\//.test(p)) return null;
+  return p;
+}
 
 function generateOrderNumber(): string {
   const now = new Date();
@@ -48,6 +57,9 @@ export async function POST(req: Request) {
     select: { id: true, taxRate: true },
   });
   if (!store) return NextResponse.json({ error: "Toko tidak ditemukan" }, { status: 404 });
+
+  const payMethod = body.payMethod === "manual" ? "manual" : "auto";
+  const proof = payMethod === "manual" ? sanitizeProof(body.proof) : null;
 
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -127,8 +139,9 @@ export async function POST(req: Request) {
           subtotal: new Prisma.Decimal(subtotal),
           taxTotal: new Prisma.Decimal(taxTotal),
           grandTotal: new Prisma.Decimal(grandTotal),
-          paymentMethod: PaymentMethod.CASH,
+          paymentMethod: payMethod === "manual" ? PaymentMethod.BANK_TRANSFER : PaymentMethod.CASH,
           paymentStatus: PaymentStatus.UNPAID,
+          paymentProofUrl: payMethod === "manual" ? proof : null,
           note: body.note?.trim() || null,
           storeId: store.id,
           userId: owner.id,
@@ -141,8 +154,8 @@ export async function POST(req: Request) {
 
     const total = Number(order.grandTotal);
 
-    // Jika Midtrans aktif, buat token Snap untuk pembayaran online.
-    if (isMidtransConfigured()) {
+    // Pembayaran otomatis (Snap) hanya jika dipilih & Midtrans aktif.
+    if (payMethod === "auto" && isMidtransConfigured()) {
       try {
         const snapToken = await createSnapToken({
           orderId: order.orderNumber,

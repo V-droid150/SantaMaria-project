@@ -70,6 +70,52 @@ export function verifyNotificationSignature(n: {
   return hash === n.signature_key;
 }
 
+// ---- Disbursement (Iris by Midtrans) — kirim dana ke rekening penjual ----
+const IRIS_KEY = process.env.MIDTRANS_IRIS_KEY || "";
+const IRIS_BASE = IS_PROD ? "https://app.midtrans.com/iris" : "https://app.sandbox.midtrans.com/iris";
+
+export function isDisbursementConfigured(): boolean {
+  return Boolean(IRIS_KEY);
+}
+
+// Persentase fee platform (potong dari jumlah yg dikirim ke penjual). Default 0.
+export function platformFeePercent(): number {
+  const v = Number(process.env.PLATFORM_FEE_PERCENT);
+  return Number.isFinite(v) && v >= 0 && v < 100 ? v : 0;
+}
+
+export async function disburseToSeller(params: {
+  name: string;
+  account: string;
+  bankCode: string;
+  amount: number;
+  notes: string;
+}): Promise<void> {
+  const res = await fetch(`${IRIS_BASE}/api/v1/payouts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: "Basic " + Buffer.from(IRIS_KEY + ":").toString("base64"),
+    },
+    body: JSON.stringify({
+      payouts: [
+        {
+          beneficiary_name: params.name,
+          beneficiary_account: params.account,
+          beneficiary_bank: params.bankCode,
+          amount: String(Math.round(params.amount)),
+          notes: params.notes.slice(0, 100),
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d?.error_message || "Disbursement gagal");
+  }
+}
+
 // Peta payment_type Midtrans -> enum PaymentMethod aplikasi.
 export function mapPaymentMethod(paymentType?: string): "QRIS" | "EWALLET" | "BANK_TRANSFER" | "CARD" | "CASH" {
   switch (paymentType) {

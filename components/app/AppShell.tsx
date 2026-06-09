@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Tags,
+  ClipboardList,
   Package,
   Wallet,
   Users,
@@ -28,6 +29,7 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 const NAV_ITEMS = [
   { labelKey: "nav.dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { labelKey: "nav.pos", icon: Tags, href: "/pos" },
+  { labelKey: "nav.orders", icon: ClipboardList, href: "/orders" },
   { labelKey: "nav.inventory", icon: Package, href: "/inventory" },
   { labelKey: "nav.finance", icon: Wallet, href: "/finance" },
   { labelKey: "nav.customers", icon: Users, href: "/customers" },

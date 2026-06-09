@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { OrderStatus, PaymentStatus, PaymentMethod, ProductType, StockMovementType, CashFlowType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { isMidtransConfigured, verifyNotificationSignature, mapPaymentMethod } from "@/lib/midtrans";
+import {
+  isMidtransConfigured,
+  verifyNotificationSignature,
+  mapPaymentMethod,
+  isDisbursementConfigured,
+  disburseToSeller,
+  platformFeePercent,
+} from "@/lib/midtrans";
 
 export const runtime = "nodejs";
 
@@ -45,7 +52,10 @@ export async function POST(req: Request) {
 
   const order = await prisma.order.findFirst({
     where: { orderNumber: n.order_id },
-    include: { items: { include: { variant: { include: { product: { select: { type: true } } } } } } },
+    include: {
+      items: { include: { variant: { include: { product: { select: { type: true } } } } } },
+      store: { select: { payoutBankCode: true, payoutAccount: true, payoutName: true } },
+    },
   });
   if (!order) return NextResponse.json({ ok: true }); // sudah dihapus / tidak ada — stop retry
 
@@ -97,6 +107,27 @@ export async function POST(req: Request) {
         },
       });
     });
+
+    // Model C: salurkan dana otomatis ke rekening penjual (best-effort).
+    if (
+      isDisbursementConfigured() &&
+      order.store.payoutBankCode &&
+      order.store.payoutAccount &&
+      order.store.payoutName
+    ) {
+      const net = Number(order.grandTotal) * (1 - platformFeePercent() / 100);
+      try {
+        await disburseToSeller({
+          name: order.store.payoutName,
+          account: order.store.payoutAccount,
+          bankCode: order.store.payoutBankCode,
+          amount: net,
+          notes: `Order ${order.orderNumber}`,
+        });
+      } catch {
+        // Jangan gagalkan webhook bila disbursement gagal — bisa diproses ulang manual.
+      }
+    }
   } else if (failed && order.status !== OrderStatus.PAID) {
     await prisma.order.update({
       where: { id: order.id },

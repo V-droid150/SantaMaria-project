@@ -21,6 +21,11 @@ export default async function SettingsPage() {
     taxRate: Number(store.taxRate),
     category: store.category ?? "",
     businessType: store.businessType ?? "",
+    payoutBank: store.payoutBank ?? "",
+    payoutBankCode: store.payoutBankCode ?? "",
+    payoutAccount: store.payoutAccount ?? "",
+    payoutName: store.payoutName ?? "",
+    qrisImageUrl: store.qrisImageUrl ?? null,
   };
 
   return (
