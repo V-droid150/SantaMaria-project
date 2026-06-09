@@ -205,6 +205,7 @@ model Product {
   description String?
   type        ProductType @default(PHYSICAL)
   imageUrl    String?
+  videoUrl    String? // link video produk (YouTube / URL video)
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

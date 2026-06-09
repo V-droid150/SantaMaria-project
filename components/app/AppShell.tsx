@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  ShoppingCart,
+  Tags,
   Package,
   Wallet,
   Users,
@@ -27,7 +27,7 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 
 const NAV_ITEMS = [
   { labelKey: "nav.dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { labelKey: "nav.pos", icon: ShoppingCart, href: "/pos" },
+  { labelKey: "nav.pos", icon: Tags, href: "/pos" },
   { labelKey: "nav.inventory", icon: Package, href: "/inventory" },
   { labelKey: "nav.finance", icon: Wallet, href: "/finance" },
   { labelKey: "nav.customers", icon: Users, href: "/customers" },

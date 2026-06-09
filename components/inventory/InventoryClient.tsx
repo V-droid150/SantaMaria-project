@@ -70,6 +70,7 @@ export type InvProduct = {
   description: string | null;
   type: "PHYSICAL" | "DIGITAL";
   image: string | null;
+  video: string | null;
   category: string | null;
   variants: InvVariant[];
 };
@@ -350,6 +351,7 @@ function ProductModal({
       : [emptyVariant()]
   );
   const [image, setImage] = useState<string | null>(product?.image ?? null);
+  const [video, setVideo] = useState(product?.video ?? "");
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -396,7 +398,15 @@ function ProductModal({
       const res = await fetch(url, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, type, categoryName: category, image, variants: parsed }),
+        body: JSON.stringify({
+          name,
+          description,
+          type,
+          categoryName: category,
+          image,
+          videoUrl: video,
+          variants: parsed,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -515,6 +525,17 @@ function ProductModal({
               placeholder={t("inv.descPh")}
               className={inputCls}
             />
+          </Field>
+
+          <Field label={t("inv.video")}>
+            <input
+              type="url"
+              value={video}
+              onChange={(e) => setVideo(e.target.value)}
+              placeholder={t("inv.videoPh")}
+              className={inputCls}
+            />
+            <p className="text-[11px] text-zinc-400">{t("inv.videoHint")}</p>
           </Field>
 
           {/* Varian */}

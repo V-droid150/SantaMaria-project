@@ -33,6 +33,7 @@ export default async function PublicStorePage({ params }: Params) {
           name: true,
           type: true,
           imageUrl: true,
+          videoUrl: true,
           category: { select: { name: true } },
           variants: {
             where: { isActive: true },
@@ -53,6 +54,7 @@ export default async function PublicStorePage({ params }: Params) {
       name: p.name,
       category: p.category?.name ?? null,
       image: p.imageUrl,
+      video: p.videoUrl,
       type: p.type,
       variants: p.variants.map((v) => ({
         id: v.id,

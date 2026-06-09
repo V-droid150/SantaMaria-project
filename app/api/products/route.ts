@@ -18,6 +18,7 @@ type Body = {
   type?: ProductType;
   categoryName?: string;
   image?: string | null;
+  videoUrl?: string | null;
   variants?: VariantInput[];
 };
 
@@ -28,6 +29,14 @@ function sanitizeImage(image?: string | null): string | null {
   if (image.length > MAX_IMAGE_LEN) throw new Error("Ukuran foto terlalu besar");
   if (!/^data:image\/|^https?:\/\//.test(image)) throw new Error("Format foto tidak valid");
   return image;
+}
+
+function sanitizeVideo(url?: string | null): string | null {
+  const v = url?.trim();
+  if (!v) return null;
+  if (!/^https?:\/\//.test(v)) throw new Error("Link video harus diawali http(s)://");
+  if (v.length > 500) throw new Error("Link video terlalu panjang");
+  return v;
 }
 
 export async function POST(req: Request) {
@@ -54,8 +63,10 @@ export async function POST(req: Request) {
   const type = body.type === "DIGITAL" ? ProductType.DIGITAL : ProductType.PHYSICAL;
 
   let imageUrl: string | null;
+  let videoUrl: string | null;
   try {
     imageUrl = sanitizeImage(body.image);
+    videoUrl = sanitizeVideo(body.videoUrl);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });
   }
@@ -80,6 +91,7 @@ export async function POST(req: Request) {
           description: body.description?.trim() || null,
           type,
           imageUrl,
+          videoUrl,
           storeId: session.storeId,
           categoryId,
           variants: {
