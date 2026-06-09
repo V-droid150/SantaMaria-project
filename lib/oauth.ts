@@ -1,32 +1,22 @@
 import { NextResponse } from "next/server";
-import { SignJWT, jwtVerify, importPKCS8, decodeJwt } from "jose";
+import { SignJWT, jwtVerify, decodeJwt } from "jose";
 import { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 
 /* ===========================================================================
- * Helper OAuth (Google & Apple) tanpa library tambahan — pakai jose + fetch.
- * State ditandatangani (HS256) agar tahan CSRF tanpa bergantung cookie
- * (penting untuk Apple yang callback-nya POST/form_post lintas-site).
+ * Helper OAuth (Google) tanpa library tambahan — pakai jose + fetch.
+ * State ditandatangani (HS256) agar tahan CSRF tanpa bergantung cookie.
  * ========================================================================= */
 
 const STATE_SECRET = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "dev-secret-ganti-di-produksi-minimal-32-karakter"
 );
 
-export type OAuthProvider = "google" | "apple";
+export type OAuthProvider = "google";
 
 export function isGoogleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-}
-
-export function isAppleConfigured() {
-  return Boolean(
-    process.env.APPLE_CLIENT_ID &&
-      process.env.APPLE_TEAM_ID &&
-      process.env.APPLE_KEY_ID &&
-      process.env.APPLE_PRIVATE_KEY
-  );
 }
 
 // Origin aplikasi untuk menyusun redirect_uri (harus cocok dgn konfigurasi provider).
@@ -61,25 +51,6 @@ export async function verifyState(
   } catch {
     return null;
   }
-}
-
-// ---- Apple client secret (ES256 JWT yang ditandatangani dgn .p8) ----
-export async function appleClientSecret(): Promise<string> {
-  const teamId = process.env.APPLE_TEAM_ID!;
-  const keyId = process.env.APPLE_KEY_ID!;
-  const clientId = process.env.APPLE_CLIENT_ID!;
-  // Private key bisa berisi "\n" literal pada env -> normalkan.
-  const pkcs8 = process.env.APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n");
-  const key = await importPKCS8(pkcs8, "ES256");
-
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "ES256", kid: keyId })
-    .setIssuer(teamId)
-    .setIssuedAt()
-    .setExpirationTime("5m")
-    .setAudience("https://appleid.apple.com")
-    .setSubject(clientId)
-    .sign(key);
 }
 
 // Decode id_token (token datang langsung dari endpoint provider via TLS).
@@ -142,7 +113,7 @@ export async function upsertOAuthUser(input: {
     const user = await tx.user.create({
       data: {
         name: displayName,
-        // Apple bisa menyembunyikan email -> fallback alamat sintetis unik.
+        // Fallback alamat sintetis unik bila provider tak mengirim email.
         email: email ?? `${providerAccountId}@${provider}.santamaria.local`,
         image: image ?? null,
         role: Role.ADMIN,

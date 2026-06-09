@@ -25,10 +25,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
   }
 
-  // User yang daftar lewat Google/Apple tidak punya password.
+  // User yang daftar lewat Google tidak punya password.
   if (!user.passwordHash) {
     return NextResponse.json(
-      { error: "Akun ini terdaftar via Google/Apple. Silakan masuk dengan metode tersebut." },
+      { error: "Akun ini terdaftar via Google. Silakan masuk dengan Google." },
       { status: 401 }
     );
   }
