@@ -18,6 +18,27 @@ import {
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
 
+// Snap.js dimuat dinamis saat dibutuhkan.
+declare global {
+  interface Window {
+    snap?: { pay: (token: string, opts: Record<string, () => void>) => void };
+  }
+}
+let snapLoader: Promise<void> | null = null;
+function loadSnap(url: string, clientKey: string): Promise<void> {
+  if (typeof window !== "undefined" && window.snap) return Promise.resolve();
+  if (snapLoader) return snapLoader;
+  snapLoader = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = url;
+    s.setAttribute("data-client-key", clientKey);
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Gagal memuat pembayaran"));
+    document.body.appendChild(s);
+  });
+  return snapLoader;
+}
+
 export type PubVariant = { id: string; name: string; price: number; stock: number };
 export type PubProduct = {
   id: string;
@@ -60,7 +81,9 @@ export default function PublicStoreClient({
   const [form, setForm] = useState({ name: "", phone: "", address: "", note: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ orderNumber: string; total: number } | null>(null);
+  const [success, setSuccess] = useState<{ orderNumber: string; total: number; paid?: boolean } | null>(
+    null
+  );
 
   const lines = Object.values(cart);
   const itemCount = lines.reduce((n, l) => n + l.qty, 0);
@@ -124,9 +147,33 @@ export default function PublicStoreClient({
         setError(data.error ?? "Gagal membuat pesanan");
         return;
       }
-      setSuccess({ orderNumber: data.orderNumber, total: data.total });
-      setCart({});
-      setPanel("success");
+
+      const finish = (paid: boolean) => {
+        setSuccess({ orderNumber: data.orderNumber, total: data.total, paid });
+        setCart({});
+        setPanel("success");
+      };
+
+      // Jika pembayaran online aktif (Midtrans) -> buka popup Snap.
+      if (data.snapToken && data.clientKey && data.snapUrl) {
+        try {
+          await loadSnap(data.snapUrl, data.clientKey);
+          setSubmitting(false);
+          window.snap?.pay(data.snapToken, {
+            onSuccess: () => finish(true),
+            onPending: () => finish(false),
+            onError: () => setError("Pembayaran gagal. Silakan coba lagi."),
+            onClose: () =>
+              setError("Pembayaran dibatalkan. Pesananmu tersimpan sebagai belum dibayar."),
+          });
+          return;
+        } catch {
+          finish(false); // gagal muat Snap -> tampilkan sukses biasa
+          return;
+        }
+      }
+
+      finish(false);
     } catch {
       setError("Terjadi kesalahan jaringan");
     } finally {
@@ -282,6 +329,7 @@ export default function PublicStoreClient({
               <SuccessView
                 orderNumber={success.orderNumber}
                 total={success.total}
+                paid={success.paid}
                 storePhone={store.phone}
                 onClose={() => setPanel(null)}
               />
@@ -587,11 +635,13 @@ function CheckoutView({
 function SuccessView({
   orderNumber,
   total,
+  paid,
   storePhone,
   onClose,
 }: {
   orderNumber: string;
   total: number;
+  paid?: boolean;
   storePhone: string | null;
   onClose: () => void;
 }) {
@@ -600,15 +650,20 @@ function SuccessView({
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-400 text-zinc-900">
         <CheckCircle2 className="h-9 w-9" />
       </div>
-      <h3 className="mt-4 text-lg font-bold">Pesanan berhasil dibuat! 🎉</h3>
+      <h3 className="mt-4 text-lg font-bold">
+        {paid ? "Pembayaran berhasil! 🎉" : "Pesanan berhasil dibuat! 🎉"}
+      </h3>
       <p className="mt-1 text-sm text-zinc-500">No. Pesanan</p>
       <p className="text-lg font-bold text-zinc-900">{orderNumber}</p>
       <p className="mt-3 text-sm text-zinc-600">
         Total: <span className="font-bold">{rupiah(total)}</span>
       </p>
       <p className="mt-4 max-w-xs text-sm text-zinc-500">
-        Penjual akan segera memproses pesananmu
-        {storePhone ? " dan menghubungimu" : ""}. Pembayaran online akan segera tersedia.
+        {paid
+          ? "Pembayaran diterima. Penjual akan segera memproses pesananmu."
+          : `Pesananmu tersimpan. Penjual akan segera memproses${
+              storePhone ? " dan menghubungimu" : ""
+            }.`}
       </p>
       <button
         onClick={onClose}

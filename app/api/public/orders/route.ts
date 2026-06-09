@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma, OrderStatus, PaymentStatus, PaymentMethod, ProductType, SalesChannel } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isMidtransConfigured, createSnapToken, midtransClientKey, snapJsUrl } from "@/lib/midtrans";
 
 // Order publik dari halaman katalog toko (tanpa login).
 // Status PENDING/UNPAID — pembayaran online menyusul. Stok belum dikurangi
@@ -138,10 +139,34 @@ export async function POST(req: Request) {
       });
     });
 
-    return NextResponse.json(
-      { orderNumber: order.orderNumber, total: Number(order.grandTotal) },
-      { status: 201 }
-    );
+    const total = Number(order.grandTotal);
+
+    // Jika Midtrans aktif, buat token Snap untuk pembayaran online.
+    if (isMidtransConfigured()) {
+      try {
+        const snapToken = await createSnapToken({
+          orderId: order.orderNumber,
+          grossAmount: total,
+          customerName: custName,
+          customerPhone: custPhone,
+        });
+        return NextResponse.json(
+          {
+            orderNumber: order.orderNumber,
+            total,
+            snapToken,
+            clientKey: midtransClientKey(),
+            snapUrl: snapJsUrl(),
+          },
+          { status: 201 }
+        );
+      } catch {
+        // Pembayaran gagal disiapkan -> order tetap ada (PENDING), tampilkan sukses biasa.
+        return NextResponse.json({ orderNumber: order.orderNumber, total }, { status: 201 });
+      }
+    }
+
+    return NextResponse.json({ orderNumber: order.orderNumber, total }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Gagal membuat pesanan";
     return NextResponse.json({ error: message }, { status: 400 });
