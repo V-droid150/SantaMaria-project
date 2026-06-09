@@ -8,6 +8,7 @@ import AuthShell from "@/components/auth/AuthShell";
 import OAuthButtons from "@/components/auth/OAuthButtons";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/components/i18n/LanguageProvider";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 const OAUTH_ERRORS: Record<string, string> = {
   oauth_not_configured: "Login sosial belum dikonfigurasi. Gunakan email & password.",
@@ -27,6 +28,7 @@ function LoginForm() {
     oauthError ? OAUTH_ERRORS[oauthError] ?? null : null
   );
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +45,7 @@ function LoginForm() {
         setError(data.error ?? "Gagal masuk");
         return;
       }
+      setRedirecting(true); // tampilkan layar loading hingga dashboard siap
       router.push(from);
       router.refresh();
     } catch {
@@ -51,6 +54,8 @@ function LoginForm() {
       setLoading(false);
     }
   }
+
+  if (redirecting) return <LoadingScreen label={t("auth.processing")} />;
 
   return (
     <AuthShell title={t("auth.loginTitle")} subtitle={t("auth.loginSubtitle")}>

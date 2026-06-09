@@ -329,16 +329,23 @@ function ProductModal({
             <h3 className="text-lg font-bold">{product.name}</h3>
             {product.category && <p className="text-xs text-zinc-400">{product.category}</p>}
             <p className="mt-1 text-xl font-bold text-zinc-900">{rupiah(variant.price)}</p>
-            {product.video && (
-              <a
-                href={product.video}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-700 hover:text-zinc-900"
-              >
-                <PlayCircle className="h-4 w-4 text-yellow-500" /> Tonton Video
-              </a>
-            )}
+            {product.video &&
+              (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(product.video) ? (
+                <video
+                  controls
+                  src={product.video}
+                  className="mt-3 w-full rounded-xl border border-zinc-200"
+                />
+              ) : (
+                <a
+                  href={product.video}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-700 hover:text-zinc-900"
+                >
+                  <PlayCircle className="h-4 w-4 text-yellow-500" /> Tonton Video
+                </a>
+              ))}
           </div>
 
           {product.variants.length > 1 && (

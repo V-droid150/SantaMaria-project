@@ -15,6 +15,8 @@ import {
   ImagePlus,
   Package,
   ClipboardCheck,
+  Video,
+  Upload,
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
 import { useI18n } from "@/components/i18n/LanguageProvider";
@@ -353,6 +355,32 @@ function ProductModal({
   const [image, setImage] = useState<string | null>(product?.image ?? null);
   const [video, setVideo] = useState(product?.video ?? "");
   const [imgLoading, setImgLoading] = useState(false);
+  const [vidUploading, setVidUploading] = useState(false);
+
+  async function handleVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("video/")) return setError("File harus berupa video");
+    if (file.size > 50 * 1024 * 1024) return setError("Ukuran video maksimal 50 MB");
+    setError(null);
+    setVidUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Gagal mengunggah video");
+        return;
+      }
+      setVideo(data.url);
+    } catch {
+      setError("Kesalahan jaringan saat unggah video");
+    } finally {
+      setVidUploading(false);
+    }
+  }
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -473,6 +501,43 @@ function ProductModal({
             </div>
           </Field>
 
+          {/* Video produk: upload file ATAU tempel link */}
+          <Field label={t("inv.video")}>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-yellow-400">
+                {vidUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {vidUploading ? t("inv.videoUploading") : t("inv.videoUpload")}
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoFile}
+                  disabled={vidUploading}
+                  className="hidden"
+                />
+              </label>
+              {video && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-yellow-400/15 px-2.5 py-1 text-xs font-semibold text-yellow-600">
+                  <Video className="h-3.5 w-3.5" /> {t("inv.videoAttached")}
+                  <button
+                    type="button"
+                    onClick={() => setVideo("")}
+                    className="ml-1 text-red-500 hover:underline"
+                  >
+                    {t("common.delete")}
+                  </button>
+                </span>
+              )}
+            </div>
+            <input
+              type="url"
+              value={video}
+              onChange={(e) => setVideo(e.target.value)}
+              placeholder={t("inv.videoPh")}
+              className={`${inputCls} mt-2`}
+            />
+            <p className="text-[11px] text-zinc-400">{t("inv.videoHint")}</p>
+          </Field>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t("inv.name")}>
               <input
@@ -525,17 +590,6 @@ function ProductModal({
               placeholder={t("inv.descPh")}
               className={inputCls}
             />
-          </Field>
-
-          <Field label={t("inv.video")}>
-            <input
-              type="url"
-              value={video}
-              onChange={(e) => setVideo(e.target.value)}
-              placeholder={t("inv.videoPh")}
-              className={inputCls}
-            />
-            <p className="text-[11px] text-zinc-400">{t("inv.videoHint")}</p>
           </Field>
 
           {/* Varian */}
