@@ -18,12 +18,22 @@ function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Validasi password: minimal 8 karakter & konfirmasi harus sama.
+    if (password.length < 8) {
+      setError(t("auth.passwordMin"));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t("auth.passwordMismatch"));
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/signup", {
@@ -118,10 +128,37 @@ function SignupForm() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimal 8 karakter"
+              placeholder={t("auth.passwordHint")}
               className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-400/40"
             />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="confirmPassword" className="text-sm font-medium text-zinc-700">
+            {t("auth.confirmPassword")}
+          </label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder={t("auth.confirmPasswordPh")}
+              className={`w-full rounded-xl border bg-zinc-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:bg-white focus:ring-2 focus:ring-yellow-400/40 ${
+                confirmPassword && confirmPassword !== password
+                  ? "border-red-300 focus:border-red-400"
+                  : "border-zinc-200 focus:border-yellow-400"
+              }`}
+            />
+          </div>
+          {confirmPassword && confirmPassword !== password && (
+            <p className="text-xs text-red-500">{t("auth.passwordMismatch")}</p>
+          )}
         </div>
 
         <button
