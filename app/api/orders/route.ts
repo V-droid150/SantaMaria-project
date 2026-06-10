@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, OrderStatus, PaymentStatus, ProductType, StockMovementType, CashFlowType, SalesChannel, PaymentMethod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { notifyLowStock } from "@/lib/push";
 
 type IncomingItem = { variantId: string; quantity: number };
 type Body = {
@@ -169,6 +170,12 @@ export async function POST(req: Request) {
 
       return created;
     });
+
+    // Cek stok menipis setelah penjualan (best-effort).
+    await notifyLowStock(
+      session.storeId,
+      body.items.map((i) => i.variantId)
+    );
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err) {

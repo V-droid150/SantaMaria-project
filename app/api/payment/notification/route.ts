@@ -9,6 +9,8 @@ import {
   disburseToSeller,
   platformFeePercent,
 } from "@/lib/midtrans";
+import { notifyStore, notifyLowStock } from "@/lib/push";
+import { rupiah } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -107,6 +109,18 @@ export async function POST(req: Request) {
         },
       });
     });
+
+    // Notifikasi: pembayaran berhasil + cek stok menipis (best-effort).
+    await notifyStore(order.storeId, {
+      title: "Pembayaran berhasil ✅",
+      body: `${order.orderNumber} • ${rupiah(Number(order.grandTotal))} sudah lunas. Pesanan siap diproses.`,
+      url: "/orders",
+      tag: `paid-${order.orderNumber}`,
+    });
+    await notifyLowStock(
+      order.storeId,
+      order.items.map((it) => it.variantId)
+    );
 
     // Model C: salurkan dana otomatis ke rekening penjual (best-effort).
     if (

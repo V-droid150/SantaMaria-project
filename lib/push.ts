@@ -76,3 +76,29 @@ export async function notifyStore(storeId: string, payload: PushPayload): Promis
     /* jangan ganggu request utama */
   }
 }
+
+// Cek varian (yang baru saja terjual) yang stoknya kini <= titik reorder,
+// lalu kirim satu notifikasi pengingat restok. Best-effort.
+export async function notifyLowStock(storeId: string, variantIds: string[]): Promise<void> {
+  try {
+    if (!isPushConfigured() || variantIds.length === 0) return;
+    const variants = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds }, isActive: true, reorderPoint: { gt: 0 } },
+      select: { name: true, stock: true, reorderPoint: true, product: { select: { name: true } } },
+    });
+    const low = variants.filter((v) => v.stock <= v.reorderPoint);
+    if (low.length === 0) return;
+
+    const first = low[0];
+    const label = `${first.product.name}${first.name !== "Default" ? ` (${first.name})` : ""}`;
+    const more = low.length > 1 ? ` +${low.length - 1} produk lain` : "";
+    await notifyStore(storeId, {
+      title: "Stok menipis ⚠️",
+      body: `${label} tersisa ${first.stock}${more}. Saatnya restok.`,
+      url: "/inventory",
+      tag: "low-stock",
+    });
+  } catch {
+    /* abaikan */
+  }
+}

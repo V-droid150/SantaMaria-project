@@ -3,6 +3,7 @@ import { OrderStatus, PaymentStatus, ProductType, StockMovementType, CashFlowTyp
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { canAccess } from "@/lib/rbac";
+import { notifyLowStock } from "@/lib/push";
 
 // Konfirmasi / tolak pesanan (mis. order online transfer manual).
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -68,6 +69,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         },
       });
     });
+    // Cek stok menipis setelah pesanan dikonfirmasi (best-effort).
+    await notifyLowStock(
+      order.storeId,
+      order.items.map((it) => it.variantId)
+    );
     return NextResponse.json({ ok: true });
   }
 

@@ -3,6 +3,8 @@ import { randomBytes } from "crypto";
 import { Prisma, OrderStatus, PaymentStatus, PaymentMethod, ProductType, SalesChannel } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isMidtransConfigured, createSnapToken, midtransClientKey, snapJsUrl } from "@/lib/midtrans";
+import { notifyStore } from "@/lib/push";
+import { rupiah } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -164,6 +166,17 @@ export async function POST(req: Request) {
 
     const total = Number(order.grandTotal);
     const token = order.accessToken;
+
+    // Notifikasi ke semua staf toko (best-effort, tak menggagalkan checkout).
+    const isManual = payMethod === "manual";
+    await notifyStore(store.id, {
+      title: isManual ? "Transfer manual perlu konfirmasi 💸" : "Pesanan online baru 🛍️",
+      body: `${order.orderNumber} • ${rupiah(total)} dari ${custName}${
+        isManual ? " — cek bukti transfer & konfirmasi" : ""
+      }`,
+      url: "/orders",
+      tag: `order-${order.orderNumber}`,
+    });
 
     // Pembayaran otomatis (Snap) hanya jika dipilih & Midtrans aktif.
     if (payMethod === "auto" && isMidtransConfigured()) {
