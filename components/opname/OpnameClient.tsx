@@ -55,7 +55,7 @@ export default function OpnameClient({ rows }: { rows: OpnameRow[] }) {
       setNote("");
       router.refresh();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

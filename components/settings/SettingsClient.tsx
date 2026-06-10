@@ -91,7 +91,7 @@ export default function SettingsClient({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("File harus berupa gambar");
+    if (!file.type.startsWith("image/")) return setError(t("common.errImage"));
     try {
       set("qrisImageUrl", await compressImage(file));
     } catch {
@@ -117,7 +117,7 @@ export default function SettingsClient({
       setSaved(true);
       router.refresh();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

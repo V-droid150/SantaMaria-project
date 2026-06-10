@@ -304,8 +304,8 @@ function AddDebtModal({
     const amt = Number(onlyDigits(amount));
     const paid = Number(onlyDigits(paidNow)) || 0;
     if (!partyName.trim()) return setError(isReceivable ? "Nama pelanggan wajib diisi" : "Nama supplier wajib diisi");
-    if (!amt || amt <= 0) return setError("Jumlah harus lebih dari 0");
-    if (paid > amt) return setError("Jumlah dibayar melebihi total");
+    if (!amt || amt <= 0) return setError(t("common.errAmount"));
+    if (paid > amt) return setError(t("debt.errPaidOver"));
     setSaving(true);
     try {
       const res = await fetch("/api/debts", {
@@ -327,7 +327,7 @@ function AddDebtModal({
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }
@@ -459,8 +459,8 @@ function PayModal({ debt, onClose, onSaved }: { debt: DebtRow; onClose: () => vo
   async function save() {
     setError(null);
     const amt = Number(onlyDigits(amount));
-    if (!amt || amt <= 0) return setError("Jumlah bayar harus lebih dari 0");
-    if (amt > remaining + 0.5) return setError("Jumlah melebihi sisa tagihan");
+    if (!amt || amt <= 0) return setError(t("common.errAmount"));
+    if (amt > remaining + 0.5) return setError(t("debt.errOverRemaining"));
     setSaving(true);
     try {
       const res = await fetch(`/api/debts/${debt.id}`, {
@@ -475,7 +475,7 @@ function PayModal({ debt, onClose, onSaved }: { debt: DebtRow; onClose: () => vo
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

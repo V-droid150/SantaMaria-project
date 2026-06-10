@@ -202,7 +202,7 @@ function CustomerModal({
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

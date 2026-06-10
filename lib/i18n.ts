@@ -113,6 +113,12 @@ const id: Dict = {
   "common.saved": "Tersimpan",
   "common.networkError": "Kesalahan jaringan",
   "common.confirmDelete": "Yakin ingin menghapus item ini?",
+  "common.errImage": "File harus berupa gambar",
+  "common.errVideo": "File harus berupa video",
+  "common.errVideoSize": "Ukuran video maksimal 50 MB",
+  "common.errPhotoProcess": "Gagal memproses foto",
+  "common.errAmount": "Jumlah harus lebih dari 0",
+  "common.errNameRequired": "Nama wajib diisi",
 
   // Inventaris
   "inv.title": "Inventaris",
@@ -160,6 +166,7 @@ const id: Dict = {
   "inv.digitalInfo": "Instruksi akses (opsional)",
   "inv.digitalInfoPh": "mis. kata sandi, kode lisensi, cara pakai...",
   "inv.digitalHint": "Dikirim otomatis ke pembeli setelah pembayaran lunas (di halaman pesanan).",
+  "inv.errPrice": "Harga varian harus berupa angka",
   "prod.title": "Produk",
   "prod.subtitle": "Daftar produk yang kamu jual.",
   "prod.manage": "Kelola Produk",
@@ -255,6 +262,7 @@ const id: Dict = {
   "fin.date": "Tanggal",
   "fin.note": "Keterangan (opsional)",
   "fin.notePh": "Catatan...",
+  "fin.errCategory": "Kategori wajib diisi",
 
   // Hutang & Piutang
   "debt.title": "Hutang & Piutang",
@@ -294,6 +302,8 @@ const id: Dict = {
   "debt.remaining": "Sisa tagihan",
   "debt.payAmount": "Jumlah dibayar",
   "debt.payHint": "Pembayaran otomatis tercatat di Arus Kas.",
+  "debt.errPaidOver": "Jumlah dibayar melebihi total",
+  "debt.errOverRemaining": "Jumlah melebihi sisa tagihan",
 
   // Laporan
   "rep.title": "Laporan",
@@ -516,6 +526,12 @@ const en: Dict = {
   "common.saved": "Saved",
   "common.networkError": "Network error",
   "common.confirmDelete": "Are you sure you want to delete this item?",
+  "common.errImage": "File must be an image",
+  "common.errVideo": "File must be a video",
+  "common.errVideoSize": "Video size is max 50 MB",
+  "common.errPhotoProcess": "Failed to process photo",
+  "common.errAmount": "Amount must be greater than 0",
+  "common.errNameRequired": "Name is required",
 
   "inv.title": "Inventory",
   "inv.subtitle": "Manage your product catalog, variants, and stock.",
@@ -562,6 +578,7 @@ const en: Dict = {
   "inv.digitalInfo": "Access instructions (optional)",
   "inv.digitalInfoPh": "e.g. password, license code, how to use...",
   "inv.digitalHint": "Sent automatically to the buyer after payment is completed (on the order page).",
+  "inv.errPrice": "Variant price must be a number",
   "prod.title": "Products",
   "prod.subtitle": "List of products you sell.",
   "prod.manage": "Manage Products",
@@ -654,6 +671,7 @@ const en: Dict = {
   "fin.date": "Date",
   "fin.note": "Description (optional)",
   "fin.notePh": "Notes...",
+  "fin.errCategory": "Category is required",
 
   // Debts & Receivables
   "debt.title": "Debts & Receivables",
@@ -693,6 +711,8 @@ const en: Dict = {
   "debt.remaining": "Remaining",
   "debt.payAmount": "Payment amount",
   "debt.payHint": "Payment is automatically recorded in Cash Flow.",
+  "debt.errPaidOver": "Paid amount exceeds total",
+  "debt.errOverRemaining": "Amount exceeds remaining balance",
 
   "rep.title": "Reports",
   "rep.subtitle": "Performance summary",

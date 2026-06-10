@@ -199,8 +199,8 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   async function save() {
     setError(null);
     const amt = Number(amount);
-    if (!amt || amt <= 0) return setError("Jumlah harus lebih dari 0");
-    if (!category.trim()) return setError("Kategori wajib diisi");
+    if (!amt || amt <= 0) return setError(t("common.errAmount"));
+    if (!category.trim()) return setError(t("fin.errCategory"));
     setSaving(true);
     try {
       const res = await fetch("/api/cashflows", {
@@ -215,7 +215,7 @@ function CashFlowModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

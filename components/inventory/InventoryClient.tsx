@@ -367,8 +367,8 @@ function ProductModal({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("video/")) return setError("File harus berupa video");
-    if (file.size > 50 * 1024 * 1024) return setError("Ukuran video maksimal 50 MB");
+    if (!file.type.startsWith("video/")) return setError(t("common.errVideo"));
+    if (file.size > 50 * 1024 * 1024) return setError(t("common.errVideoSize"));
     setError(null);
     setVidUploading(true);
     try {
@@ -382,7 +382,7 @@ function ProductModal({
       }
       setVideo(data.url);
     } catch {
-      setError("Kesalahan jaringan saat unggah video");
+      setError(t("common.networkError"));
     } finally {
       setVidUploading(false);
     }
@@ -398,13 +398,13 @@ function ProductModal({
     const file = e.target.files?.[0];
     e.target.value = ""; // izinkan pilih file sama lagi
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("File harus berupa gambar");
+    if (!file.type.startsWith("image/")) return setError(t("common.errImage"));
     setError(null);
     setImgLoading(true);
     try {
       setImage(await compressImage(file));
     } catch {
-      setError("Gagal memproses foto");
+      setError(t("common.errPhotoProcess"));
     } finally {
       setImgLoading(false);
     }
@@ -412,7 +412,7 @@ function ProductModal({
 
   async function save() {
     setError(null);
-    if (!name.trim()) return setError("Nama produk wajib diisi");
+    if (!name.trim()) return setError(t("common.errNameRequired"));
     const parsed = variants.map((v) => ({
       id: v.id,
       name: v.name.trim() || "Default",
@@ -423,7 +423,7 @@ function ProductModal({
       reorderPoint: Number(v.reorderPoint || 0),
     }));
     if (parsed.some((v) => !(v.price >= 0) || Number.isNaN(v.price))) {
-      return setError("Harga varian harus berupa angka");
+      return setError(t("inv.errPrice"));
     }
 
     setSaving(true);
@@ -451,7 +451,7 @@ function ProductModal({
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }

@@ -146,13 +146,13 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Gagal menyimpan");
+        setError(data.error ?? tr("Gagal menyimpan", "Failed to save"));
         return;
       }
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Terjadi kesalahan jaringan");
+      setError(tr("Terjadi kesalahan jaringan", "A network error occurred"));
     } finally {
       setSubmitting(false);
     }

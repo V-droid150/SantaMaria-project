@@ -191,7 +191,7 @@ function StaffModal({
 
   async function save() {
     setError(null);
-    if (!name.trim()) return setError("Nama wajib diisi");
+    if (!name.trim()) return setError(t("common.errNameRequired"));
     if (!isEdit && (!email.trim() || !password)) return setError("Email & password wajib diisi");
     if (password && password.length < 8) return setError("Password minimal 8 karakter");
 
@@ -213,7 +213,7 @@ function StaffModal({
       }
       onSaved();
     } catch {
-      setError("Kesalahan jaringan");
+      setError(t("common.networkError"));
     } finally {
       setSaving(false);
     }
