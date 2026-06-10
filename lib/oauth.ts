@@ -9,6 +9,10 @@ import { signSession, SESSION_COOKIE } from "@/lib/session";
  * State ditandatangani (HS256) agar tahan CSRF tanpa bergantung cookie.
  * ========================================================================= */
 
+// Lihat lib/session.ts: AUTH_SECRET wajib di produksi.
+if (!process.env.AUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("AUTH_SECRET wajib diset di produksi (minimal 32 karakter acak).");
+}
 const STATE_SECRET = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "dev-secret-ganti-di-produksi-minimal-32-karakter"
 );
@@ -57,13 +61,17 @@ export async function verifyState(
 export function decodeIdToken(idToken: string): {
   sub: string;
   email?: string;
+  emailVerified: boolean;
   name?: string;
   picture?: string;
 } {
   const p = decodeJwt(idToken);
+  // Google mengirim email_verified sebagai boolean (kadang string "true").
+  const ev = (p as Record<string, unknown>).email_verified;
   return {
     sub: String(p.sub),
     email: typeof p.email === "string" ? p.email : undefined,
+    emailVerified: ev === true || ev === "true",
     name: typeof p.name === "string" ? p.name : undefined,
     picture: typeof p.picture === "string" ? p.picture : undefined,
   };
@@ -79,10 +87,11 @@ export async function upsertOAuthUser(input: {
   provider: OAuthProvider;
   providerAccountId: string;
   email?: string;
+  emailVerified?: boolean;
   name?: string;
   image?: string;
 }) {
-  const { provider, providerAccountId, email, name, image } = input;
+  const { provider, providerAccountId, email, emailVerified, name, image } = input;
 
   const existingAccount = await prisma.account.findUnique({
     where: { provider_providerAccountId: { provider, providerAccountId } },
@@ -94,7 +103,10 @@ export async function upsertOAuthUser(input: {
     });
   }
 
-  if (email) {
+  // HANYA tautkan ke akun yang sudah ada bila email TERVERIFIKASI oleh provider.
+  // Mencegah pengambilalihan akun (attacker mendaftar email korban tanpa verifikasi,
+  // lalu "diklaim" lewat OAuth).
+  if (email && emailVerified) {
     const byEmail = await prisma.user.findUnique({ where: { email } });
     if (byEmail) {
       await prisma.account.create({ data: { provider, providerAccountId, userId: byEmail.id } });

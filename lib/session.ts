@@ -12,6 +12,11 @@ export type SessionPayload = {
   onboarded: boolean; // sudah menyelesaikan kuesioner onboarding?
 };
 
+// Di produksi AUTH_SECRET WAJIB diset — fallback hanya untuk dev lokal.
+// Tanpa ini, sesi JWT bisa dipalsukan oleh siapa pun yang tahu secret default.
+if (!process.env.AUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("AUTH_SECRET wajib diset di produksi (minimal 32 karakter acak).");
+}
 const SECRET = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "dev-secret-ganti-di-produksi-minimal-32-karakter"
 );

@@ -50,9 +50,11 @@ export async function POST(req: Request) {
       // Ambil data varian terkini (harga & stok = sumber kebenaran di server,
       // JANGAN percaya harga dari client).
       const variantIds = body.items.map((i) => i.variantId);
+      // Scope ke toko milik sesi: cegah IDOR lintas-toko (mengurangi stok /
+      // membaca harga varian milik toko lain).
       const variants = await tx.productVariant.findMany({
-        where: { id: { in: variantIds } },
-        include: { product: { select: { type: true, storeId: true } } },
+        where: { id: { in: variantIds }, product: { storeId: session.storeId } },
+        include: { product: { select: { type: true } } },
       });
       const variantMap = new Map(variants.map((v) => [v.id, v]));
 
@@ -102,6 +104,17 @@ export async function POST(req: Request) {
             ? PaymentStatus.PARTIAL
             : PaymentStatus.UNPAID;
 
+      // Validasi pelanggan milik toko ini (cegah menautkan pelanggan toko lain).
+      let customerId: string | null = null;
+      if (body.customerId) {
+        const c = await tx.customer.findFirst({
+          where: { id: body.customerId, storeId: session.storeId },
+          select: { id: true },
+        });
+        if (!c) throw new Error("Pelanggan tidak ditemukan");
+        customerId = c.id;
+      }
+
       // Buat order + item sekaligus.
       const created = await tx.order.create({
         data: {
@@ -116,7 +129,7 @@ export async function POST(req: Request) {
           paidAmount: new Prisma.Decimal(paidAmount),
           storeId: session.storeId,
           userId: session.userId,
-          customerId: body.customerId ?? null,
+          customerId,
           items: { createMany: { data: orderItemsData } },
         },
       });

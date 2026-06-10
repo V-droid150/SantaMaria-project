@@ -41,6 +41,7 @@ export async function GET(req: Request) {
       provider: "google",
       providerAccountId: profile.sub,
       email: profile.email,
+      emailVerified: profile.emailVerified,
       name: profile.name,
       image: profile.picture,
     });
