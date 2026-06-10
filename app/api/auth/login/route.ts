@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export async function POST(req: Request) {
-  let body: { email?: string; password?: string };
+  let body: { email?: string; password?: string; captchaToken?: string };
   try {
     body = await req.json();
   } catch {
@@ -16,6 +17,12 @@ export async function POST(req: Request) {
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
+  }
+
+  // Verifikasi anti-bot (Turnstile) — dilewati bila fitur belum dikonfigurasi.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (!(await verifyTurnstile(body.captchaToken, ip))) {
+    return NextResponse.json({ error: "Verifikasi anti-bot gagal. Coba lagi." }, { status: 400 });
   }
 
   const user = await prisma.user.findUnique({ where: { email } });

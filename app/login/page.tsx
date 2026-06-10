@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Lock, Mail } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import OAuthButtons from "@/components/auth/OAuthButtons";
+import TurnstileWidget, { isTurnstileEnabled } from "@/components/auth/TurnstileWidget";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/components/i18n/LanguageProvider";
 import LoadingScreen from "@/components/ui/LoadingScreen";
@@ -29,6 +30,15 @@ function LoginForm() {
   );
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const captchaEnabled = isTurnstileEnabled();
+
+  // Token CAPTCHA sekali pakai -> muat ulang widget agar dapat token baru.
+  function resetCaptcha() {
+    setCaptchaToken("");
+    setCaptchaKey((k) => k + 1);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,11 +48,12 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, captchaToken }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Gagal masuk");
+        resetCaptcha();
         return;
       }
       setRedirecting(true); // tampilkan layar loading hingga dashboard siap
@@ -50,6 +61,7 @@ function LoginForm() {
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan");
+      resetCaptcha();
     } finally {
       setLoading(false);
     }
@@ -115,9 +127,13 @@ function LoginForm() {
           </div>
         </div>
 
+        {captchaEnabled && (
+          <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
+        )}
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (captchaEnabled && !captchaToken)}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}

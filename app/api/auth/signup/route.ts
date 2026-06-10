@@ -3,9 +3,10 @@ import { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export async function POST(req: Request) {
-  let body: { name?: string; email?: string; password?: string };
+  let body: { name?: string; email?: string; password?: string; captchaToken?: string };
   try {
     body = await req.json();
   } catch {
@@ -18,6 +19,12 @@ export async function POST(req: Request) {
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Nama, email, dan password wajib diisi" }, { status: 400 });
+  }
+
+  // Verifikasi anti-bot (Turnstile) — dilewati bila fitur belum dikonfigurasi.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (!(await verifyTurnstile(body.captchaToken, ip))) {
+    return NextResponse.json({ error: "Verifikasi anti-bot gagal. Coba lagi." }, { status: 400 });
   }
   if (password.length < 8) {
     return NextResponse.json({ error: "Password minimal 8 karakter" }, { status: 400 });
