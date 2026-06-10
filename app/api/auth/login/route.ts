@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   let body: { email?: string; password?: string; captchaToken?: string };
@@ -17,6 +18,14 @@ export async function POST(req: Request) {
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
+  }
+
+  // Rate limit anti brute-force (per IP+email).
+  if (!(await rateLimit("login", `${clientIp(req)}:${email}`, 10, "5 m"))) {
+    return NextResponse.json(
+      { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
+      { status: 429 }
+    );
   }
 
   // Verifikasi anti-bot (Turnstile) — dilewati bila fitur belum dikonfigurasi.

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getSession } from "@/lib/auth";
+import { rateLimit } from "@/lib/ratelimit";
 
 // Chatbot AI "Maria" — pakai Anthropic SDK resmi, streaming.
 // Default model Claude Opus 4.8; bisa diganti via env CHAT_MODEL (mis. claude-haiku-4-5 utk hemat).
@@ -26,6 +27,14 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) {
     return new Response(JSON.stringify({ error: "Tidak terautentikasi" }), { status: 401 });
+  }
+
+  // Rate limit: cegah abuse biaya AI (per user).
+  if (!(await rateLimit("chat", session.userId, 30, "5 m"))) {
+    return new Response(
+      JSON.stringify({ error: "Terlalu banyak pesan. Tunggu sebentar ya." }),
+      { status: 429, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {

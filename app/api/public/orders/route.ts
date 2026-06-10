@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { isMidtransConfigured, createSnapToken, midtransClientKey, snapJsUrl } from "@/lib/midtrans";
 import { notifyStore } from "@/lib/push";
 import { rupiah } from "@/lib/format";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,14 @@ function generateOrderNumber(): string {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: cegah spam order dari toko publik (per IP).
+  if (!(await rateLimit("puborder", clientIp(req), 20, "5 m"))) {
+    return NextResponse.json(
+      { error: "Terlalu banyak permintaan. Coba lagi beberapa menit lagi." },
+      { status: 429 }
+    );
+  }
+
   let body: Body;
   try {
     body = await req.json();

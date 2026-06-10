@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { isEmailConfigured, sendEmail, appOrigin } from "@/lib/email";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,14 @@ export async function POST(req: Request) {
 
   const email = body.email?.trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 });
+
+  // Rate limit: cegah spam pengiriman email reset (per IP).
+  if (!(await rateLimit("forgot", clientIp(req), 5, "15 m"))) {
+    return NextResponse.json(
+      { error: "Terlalu banyak permintaan. Coba lagi nanti." },
+      { status: 429 }
+    );
+  }
 
   const generic = NextResponse.json({ ok: true });
 
