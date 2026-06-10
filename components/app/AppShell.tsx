@@ -153,7 +153,11 @@ export default function AppShell({
             >
               <Bell className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white py-1 pl-1 pr-3">
+            <Link
+              href="/profile"
+              title={t("nav.profile")}
+              className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white py-1 pl-1 pr-3 transition hover:border-yellow-400"
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-400 text-sm font-bold text-zinc-900">
                 {getInitials(userName)}
               </div>
@@ -161,7 +165,7 @@ export default function AppShell({
                 <p className="text-sm font-semibold leading-tight">{userName}</p>
                 <p className="text-[11px] leading-tight text-zinc-500">{t(`role.${role}`)}</p>
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 
