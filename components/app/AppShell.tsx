@@ -15,7 +15,6 @@ import {
   Settings,
   Menu,
   X,
-  Bell,
   LogOut,
   HelpCircle,
   UserCog,
@@ -24,6 +23,7 @@ import type { Role } from "@prisma/client";
 import { getInitials } from "@/lib/format";
 import { canAccess } from "@/lib/rbac";
 import ChatWidget from "@/components/chat/ChatWidget";
+import NotificationButton from "@/components/app/NotificationButton";
 import { useI18n } from "@/components/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 
@@ -147,12 +147,7 @@ export default function AppShell({
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher compact />
-            <button
-              className="relative rounded-lg p-2 text-zinc-700 hover:bg-zinc-100"
-              aria-label="Notifikasi"
-            >
-              <Bell className="h-5 w-5" />
-            </button>
+            <NotificationButton />
             <Link
               href="/profile"
               title={t("nav.profile")}

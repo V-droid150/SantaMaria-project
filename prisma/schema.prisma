@@ -174,7 +174,24 @@ model User {
   shifts         CashierShift[]
   stockOpnames   StockOpname[]
 
+  // Langganan Web Push (notifikasi ke HP)
+  pushSubscriptions PushSubscription[]
+
   @@index([storeId, role])
+}
+
+// Langganan Web Push — satu baris per perangkat/HP yang mengaktifkan notifikasi.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String // kunci publik perangkat (dari PushSubscription.keys.p256dh)
+  auth      String // secret auth perangkat (dari PushSubscription.keys.auth)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Tautan akun pihak ketiga (Google / Apple) ke User.
