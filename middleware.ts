@@ -5,7 +5,7 @@ import { canAccess } from "@/lib/rbac";
 // Middleware proteksi route + RBAC. Berjalan di Edge Runtime.
 // jose dipakai untuk verifikasi JWT (edge-safe).
 
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

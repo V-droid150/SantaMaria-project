@@ -177,7 +177,25 @@ model User {
   // Langganan Web Push (notifikasi ke HP)
   pushSubscriptions PushSubscription[]
 
+  // Token reset password
+  passwordResets PasswordResetToken[]
+
   @@index([storeId, role])
+}
+
+// Token sekali-pakai untuk reset password (link via email).
+// Disimpan sebagai HASH (bukan token mentah) demi keamanan.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Langganan Web Push — satu baris per perangkat/HP yang mengaktifkan notifikasi.

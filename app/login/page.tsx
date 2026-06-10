@@ -127,6 +127,15 @@ function LoginForm() {
           </div>
         </div>
 
+        <div className="-mt-1 text-right">
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-zinc-500 transition hover:text-zinc-900"
+          >
+            Lupa password?
+          </Link>
+        </div>
+
         {captchaEnabled && (
           <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
         )}
