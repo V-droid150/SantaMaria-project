@@ -29,7 +29,8 @@ export default async function ReportsPage() {
     order: { storeId, paymentStatus: "PAID" as const, createdAt: { gte: monthStart } },
   };
 
-  const [items, expenseAgg, channelAgg, bestRaw] = await Promise.all([
+  const [store, items, expenseAgg, channelAgg, bestRaw] = await Promise.all([
+    prisma.store.findUnique({ where: { id: storeId }, select: { name: true } }),
     // Untuk omzet & HPP
     prisma.orderItem.findMany({
       where: paidThisMonth,
@@ -98,9 +99,11 @@ export default async function ReportsPage() {
           </p>
         </div>
         <ReportExport
+          storeName={store?.name ?? "SantaMaria"}
           monthName={monthName}
           labaRugi={{ omzet, hpp, labaKotor, pengeluaran, labaBersih }}
           bestSellers={bestSellers}
+          channels={channels}
         />
       </div>
 
