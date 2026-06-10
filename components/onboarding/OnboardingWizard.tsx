@@ -17,6 +17,7 @@ import {
   Target,
   Megaphone,
 } from "lucide-react";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 type ProductFocus = "PHYSICAL" | "DIGITAL" | "BOTH";
 
@@ -30,54 +31,63 @@ type FormState = {
   channels: string[];
 };
 
-const BUSINESS_TYPES = [
-  "Pemilik UMKM / Toko",
-  "Freelancer / Jasa",
-  "Reseller / Dropshipper",
-  "Content Creator",
-  "Lainnya",
-];
+const OPTIONS = {
+  id: {
+    business: ["Pemilik UMKM / Toko", "Freelancer / Jasa", "Reseller / Dropshipper", "Content Creator", "Lainnya"],
+    categories: [
+      "Kuliner & Minuman",
+      "Fashion & Aksesoris",
+      "Kerajinan / Handmade",
+      "Elektronik & Gadget",
+      "Jasa & Produk Digital",
+      "Kesehatan & Kecantikan",
+      "Lainnya",
+    ],
+    scales: ["Baru mau mulai", "< Rp 10 juta / bulan", "Rp 10 - 50 juta / bulan", "Rp 50 - 200 juta / bulan", "> Rp 200 juta / bulan"],
+    goals: ["Kelola stok barang", "Catat keuangan", "Sistem kasir (POS)", "Laporan penjualan", "Kelola pelanggan", "Jualan online"],
+    channels: ["Toko fisik", "Online shop sendiri", "Marketplace", "WhatsApp / Sosmed"],
+    focus: [
+      { value: "PHYSICAL", label: "Produk Fisik", desc: "Barang yang dikirim/diambil" },
+      { value: "DIGITAL", label: "Produk Digital", desc: "E-book, voucher, jasa online" },
+      { value: "BOTH", label: "Keduanya", desc: "Fisik & digital" },
+    ],
+  },
+  en: {
+    business: ["Small business / Shop owner", "Freelancer / Services", "Reseller / Dropshipper", "Content Creator", "Other"],
+    categories: [
+      "Food & Beverage",
+      "Fashion & Accessories",
+      "Crafts / Handmade",
+      "Electronics & Gadgets",
+      "Services & Digital Products",
+      "Health & Beauty",
+      "Other",
+    ],
+    scales: ["Just starting out", "< Rp 10M / month", "Rp 10 - 50M / month", "Rp 50 - 200M / month", "> Rp 200M / month"],
+    goals: ["Manage stock", "Track finances", "POS / cashier system", "Sales reports", "Manage customers", "Sell online"],
+    channels: ["Physical store", "Own online shop", "Marketplace", "WhatsApp / Social media"],
+    focus: [
+      { value: "PHYSICAL", label: "Physical Products", desc: "Items shipped/picked up" },
+      { value: "DIGITAL", label: "Digital Products", desc: "E-books, vouchers, online services" },
+      { value: "BOTH", label: "Both", desc: "Physical & digital" },
+    ],
+  },
+} as const;
 
-const CATEGORIES = [
-  "Kuliner & Minuman",
-  "Fashion & Aksesoris",
-  "Kerajinan / Handmade",
-  "Elektronik & Gadget",
-  "Jasa & Produk Digital",
-  "Kesehatan & Kecantikan",
-  "Lainnya",
-];
-
-const SCALES = [
-  "Baru mau mulai",
-  "< Rp 10 juta / bulan",
-  "Rp 10 - 50 juta / bulan",
-  "Rp 50 - 200 juta / bulan",
-  "> Rp 200 juta / bulan",
-];
-
-const GOALS = [
-  "Kelola stok barang",
-  "Catat keuangan",
-  "Sistem kasir (POS)",
-  "Laporan penjualan",
-  "Kelola pelanggan",
-  "Jualan online",
-];
-
-const CHANNELS = ["Toko fisik", "Online shop sendiri", "Marketplace", "WhatsApp / Sosmed"];
-
-const FOCUS_OPTIONS: { value: ProductFocus; label: string; desc: string; icon: React.ElementType }[] =
-  [
-    { value: "PHYSICAL", label: "Produk Fisik", desc: "Barang yang dikirim/diambil", icon: Package },
-    { value: "DIGITAL", label: "Produk Digital", desc: "E-book, voucher, jasa online", icon: Cloud },
-    { value: "BOTH", label: "Keduanya", desc: "Fisik & digital", icon: Layers },
-  ];
+const FOCUS_ICONS: Record<ProductFocus, React.ElementType> = {
+  PHYSICAL: Package,
+  DIGITAL: Cloud,
+  BOTH: Layers,
+};
 
 const TOTAL_STEPS = 6;
 
 export default function OnboardingWizard({ userName }: { userName: string }) {
   const router = useRouter();
+  const { lang } = useI18n();
+  const L = lang === "en" ? "en" : "id";
+  const o = OPTIONS[L];
+  const tr = (id: string, en: string) => (L === "en" ? en : id);
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +175,7 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
             Santa<span className="text-yellow-500">Maria</span>
           </span>
           <span className="ml-auto text-xs font-medium text-zinc-400">
-            Langkah {step} dari {TOTAL_STEPS}
+            {tr("Langkah", "Step")} {step} {tr("dari", "of")} {TOTAL_STEPS}
           </span>
         </div>
         <div className="h-1 w-full bg-zinc-100">
@@ -181,26 +191,26 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         {step === 1 && (
           <Step
             icon={Store}
-            title={`Halo, ${userName.split(" ")[0]}! 👋`}
-            subtitle="Ceritakan sedikit tentang bisnismu."
+            title={`${tr("Halo", "Hi")}, ${userName.split(" ")[0]}! 👋`}
+            subtitle={tr("Ceritakan sedikit tentang bisnismu.", "Tell us a little about your business.")}
           >
             <div className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-zinc-700">Nama toko / bisnis</label>
+                <label className="text-sm font-medium text-zinc-700">{tr("Nama toko / bisnis", "Store / business name")}</label>
                 <input
                   autoFocus
                   value={form.storeName}
                   onChange={(e) => update("storeName", e.target.value)}
-                  placeholder="contoh: Kopi Senja, Toko Berkah"
+                  placeholder={tr("contoh: Kopi Senja, Toko Berkah", "e.g. Sunset Coffee, Berkah Store")}
                   className="w-full rounded-xl border border-zinc-200 bg-white py-3 px-4 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/40"
                 />
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-zinc-700">
-                  <Briefcase className="h-4 w-4 text-zinc-400" /> Kamu seorang...
+                  <Briefcase className="h-4 w-4 text-zinc-400" /> {tr("Kamu seorang...", "You are a...")}
                 </label>
                 <ChipGroup
-                  options={BUSINESS_TYPES}
+                  options={o.business}
                   selected={[form.businessType]}
                   onSelect={(v) => update("businessType", v)}
                 />
@@ -210,9 +220,13 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         )}
 
         {step === 2 && (
-          <Step icon={Tag} title="Apa yang kamu jual?" subtitle="Pilih kategori yang paling sesuai.">
+          <Step
+            icon={Tag}
+            title={tr("Apa yang kamu jual?", "What do you sell?")}
+            subtitle={tr("Pilih kategori yang paling sesuai.", "Pick the category that fits best.")}
+          >
             <ChipGroup
-              options={CATEGORIES}
+              options={o.categories}
               selected={[form.category]}
               onSelect={(v) => update("category", v)}
             />
@@ -220,10 +234,14 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         )}
 
         {step === 3 && (
-          <Step icon={Boxes} title="Jenis produk" subtitle="Kamu menjual produk seperti apa?">
+          <Step
+            icon={Boxes}
+            title={tr("Jenis produk", "Product type")}
+            subtitle={tr("Kamu menjual produk seperti apa?", "What kind of products do you sell?")}
+          >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {FOCUS_OPTIONS.map((opt) => {
-                const Icon = opt.icon;
+              {o.focus.map((opt) => {
+                const Icon = FOCUS_ICONS[opt.value];
                 const active = form.productFocus === opt.value;
                 return (
                   <button
@@ -252,9 +270,13 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         )}
 
         {step === 4 && (
-          <Step icon={Target} title="Skala usaha" subtitle="Perkiraan omzet bulanan saat ini.">
+          <Step
+            icon={Target}
+            title={tr("Skala usaha", "Business scale")}
+            subtitle={tr("Perkiraan omzet bulanan saat ini.", "Estimated current monthly revenue.")}
+          >
             <ChipGroup
-              options={SCALES}
+              options={o.scales}
               selected={[form.scale]}
               onSelect={(v) => update("scale", v)}
             />
@@ -264,11 +286,11 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         {step === 5 && (
           <Step
             icon={Target}
-            title="Apa tujuan utamamu?"
-            subtitle="Boleh pilih lebih dari satu."
+            title={tr("Apa tujuan utamamu?", "What's your main goal?")}
+            subtitle={tr("Boleh pilih lebih dari satu.", "You can pick more than one.")}
           >
             <ChipGroup
-              options={GOALS}
+              options={o.goals}
               selected={form.goals}
               multi
               onSelect={(v) => toggleArray("goals", v)}
@@ -277,9 +299,13 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
         )}
 
         {step === 6 && (
-          <Step icon={Megaphone} title="Di mana kamu berjualan?" subtitle="Boleh pilih lebih dari satu.">
+          <Step
+            icon={Megaphone}
+            title={tr("Di mana kamu berjualan?", "Where do you sell?")}
+            subtitle={tr("Boleh pilih lebih dari satu.", "You can pick more than one.")}
+          >
             <ChipGroup
-              options={CHANNELS}
+              options={o.channels}
               selected={form.channels}
               multi
               onSelect={(v) => toggleArray("channels", v)}
@@ -301,7 +327,7 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
               disabled={submitting}
               className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
             >
-              <ArrowLeft className="h-4 w-4" /> Kembali
+              <ArrowLeft className="h-4 w-4" /> {tr("Kembali", "Back")}
             </button>
           )}
           <button
@@ -312,11 +338,11 @@ export default function OnboardingWizard({ userName }: { userName: string }) {
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {step === TOTAL_STEPS ? (
               <>
-                Selesai & Masuk <Check className="h-4 w-4" />
+                {tr("Selesai & Masuk", "Finish & Enter")} <Check className="h-4 w-4" />
               </>
             ) : (
               <>
-                Lanjut <ArrowRight className="h-4 w-4" />
+                {tr("Lanjut", "Next")} <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
@@ -359,7 +385,7 @@ function ChipGroup({
   onSelect,
   multi = false,
 }: {
-  options: string[];
+  options: readonly string[];
   selected: string[];
   onSelect: (value: string) => void;
   multi?: boolean;

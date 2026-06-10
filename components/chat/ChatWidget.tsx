@@ -2,18 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
+import { useI18n } from "@/components/i18n/LanguageProvider";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const GREETING: Msg = {
-  role: "assistant",
-  content:
-    "Halo! 👋 Aku Maria, asisten AI SantaMaria. Tanya apa saja — cara pakai aplikasi, tips jualan, atau hal lain. Aku jawab dalam bahasa apa pun kok 😊",
-};
-
 export default function ChatWidget() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([GREETING]);
+  const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: t("chat.greeting") }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -36,8 +32,8 @@ export default function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // kirim tanpa greeting awal
-        body: JSON.stringify({ messages: history.filter((m) => m !== GREETING) }),
+        // kirim tanpa greeting awal (pesan indeks 0)
+        body: JSON.stringify({ messages: history.filter((_, i) => i !== 0) }),
       });
 
       if (!res.ok || !res.body) {
@@ -46,7 +42,7 @@ export default function ChatWidget() {
           const copy = [...m];
           copy[copy.length - 1] = {
             role: "assistant",
-            content: data.error ?? "Maaf, chatbot sedang tidak tersedia.",
+            content: data.error ?? t("chat.unavailable"),
           };
           return copy;
         });
@@ -69,7 +65,7 @@ export default function ChatWidget() {
     } catch {
       setMessages((m) => {
         const copy = [...m];
-        copy[copy.length - 1] = { role: "assistant", content: "Maaf, terjadi kesalahan jaringan." };
+        copy[copy.length - 1] = { role: "assistant", content: t("chat.networkError") };
         return copy;
       });
     } finally {
@@ -82,7 +78,7 @@ export default function ChatWidget() {
       {/* Tombol mengambang */}
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Buka chat AI"
+        aria-label={t("chat.open")}
         className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-400 text-zinc-900 shadow-lg shadow-yellow-400/30 transition hover:scale-105 hover:bg-yellow-300"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
@@ -97,8 +93,8 @@ export default function ChatWidget() {
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight">Maria · Asisten AI</p>
-              <p className="text-[11px] leading-tight text-zinc-400">Online · siap membantu</p>
+              <p className="text-sm font-bold leading-tight">{t("chat.headerName")}</p>
+              <p className="text-[11px] leading-tight text-zinc-400">{t("chat.status")}</p>
             </div>
           </div>
 
@@ -134,14 +130,14 @@ export default function ChatWidget() {
                   send();
                 }
               }}
-              placeholder="Tulis pesan..."
+              placeholder={t("chat.placeholder")}
               className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-400/40"
             />
             <button
               onClick={send}
               disabled={loading || !input.trim()}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 text-zinc-900 transition hover:bg-yellow-300 disabled:opacity-50"
-              aria-label="Kirim"
+              aria-label={t("chat.send")}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>

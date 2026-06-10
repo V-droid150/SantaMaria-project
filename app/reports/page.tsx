@@ -8,14 +8,6 @@ import { getServerT } from "@/lib/i18n-server";
 import AppShell from "@/components/app/AppShell";
 import ReportExport from "@/components/reports/ReportExport";
 
-const CHANNEL_LABEL: Record<string, string> = {
-  POS: "Kasir (POS)",
-  ONLINE_STORE: "Toko Online",
-  MARKETPLACE: "Marketplace",
-  WHATSAPP: "WhatsApp",
-  OTHER: "Lainnya",
-};
-
 export default async function ReportsPage() {
   const session = await getSession();
   if (!session) redirect("/login?from=/reports");
@@ -80,7 +72,7 @@ export default async function ReportsPage() {
 
   const channels = channelAgg
     .map((c) => ({
-      channel: CHANNEL_LABEL[c.channel] ?? c.channel,
+      channel: t(`chan.${c.channel}`),
       total: Number(c._sum.grandTotal ?? 0),
       count: c._count,
     }))
