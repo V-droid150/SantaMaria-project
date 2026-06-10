@@ -33,15 +33,20 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "File tidak ditemukan" }, { status: 400 });
   }
-  if (!file.type.startsWith("video/")) {
-    return NextResponse.json({ error: "File harus berupa video" }, { status: 400 });
+  const isVideo = file.type.startsWith("video/");
+  const isImage = file.type.startsWith("image/");
+  if (!isVideo && !isImage) {
+    return NextResponse.json({ error: "File harus berupa gambar atau video" }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Ukuran video maksimal 50 MB" }, { status: 400 });
+    return NextResponse.json({ error: "Ukuran file maksimal 50 MB" }, { status: 400 });
   }
 
-  const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const path = `videos/${session.storeId}/${crypto.randomUUID()}.${ext}`;
+  const folder = isVideo ? "videos" : "images";
+  const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg"))
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const path = `${folder}/${session.storeId}/${crypto.randomUUID()}.${ext}`;
 
   try {
     const supabase = getStorageClient();

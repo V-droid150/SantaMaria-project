@@ -33,8 +33,8 @@ function onlyDigits(s: string): string {
   return s.replace(/\D/g, "");
 }
 
-// Kompres & ubah ukuran foto di browser sebelum disimpan (hemat ukuran).
-function compressImage(file: File, maxSize = 512): Promise<string> {
+// Kompres & ubah ukuran foto di browser sebelum diunggah (hemat ukuran).
+function compressImage(file: File, maxSize = 512): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -49,13 +49,27 @@ function compressImage(file: File, maxSize = 512): Promise<string> {
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("Canvas tidak didukung"));
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.8));
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Gagal memproses gambar"))),
+          "image/jpeg",
+          0.8
+        );
       };
       img.onerror = () => reject(new Error("Gagal memuat gambar"));
       img.src = reader.result as string;
     };
     reader.onerror = () => reject(new Error("Gagal membaca file"));
     reader.readAsDataURL(file);
+  });
+}
+
+// Fallback: ubah Blob -> data URL (dipakai bila Storage belum dikonfigurasi).
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(new Error("Gagal membaca gambar"));
+    r.readAsDataURL(blob);
   });
 }
 
@@ -402,7 +416,21 @@ function ProductModal({
     setError(null);
     setImgLoading(true);
     try {
-      setImage(await compressImage(file));
+      const blob = await compressImage(file);
+      // Unggah ke Storage (URL ringan). Fallback ke base64 bila Storage non-aktif.
+      try {
+        const fd = new FormData();
+        fd.append("file", new File([blob], "foto.jpg", { type: "image/jpeg" }));
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (res.ok) {
+          const data = await res.json();
+          setImage(data.url);
+        } else {
+          setImage(await blobToDataUrl(blob));
+        }
+      } catch {
+        setImage(await blobToDataUrl(blob));
+      }
     } catch {
       setError(t("common.errPhotoProcess"));
     } finally {
