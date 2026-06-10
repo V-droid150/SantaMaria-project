@@ -187,7 +187,15 @@ function SignupForm() {
         </button>
 
         <p className="text-center text-[11px] leading-relaxed text-zinc-400">
-          Dengan mendaftar, kamu menyetujui Syarat Layanan & Kebijakan Privasi SantaMaria.
+          Dengan mendaftar, kamu menyetujui{" "}
+          <Link href="/terms" target="_blank" className="underline hover:text-zinc-600">
+            Syarat Layanan
+          </Link>{" "}
+          &{" "}
+          <Link href="/privacy" target="_blank" className="underline hover:text-zinc-600">
+            Kebijakan Privasi
+          </Link>{" "}
+          SantaMaria.
         </p>
       </form>
 

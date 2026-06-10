@@ -9,11 +9,41 @@ type Params = { params: { slug: string } };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const store = await prisma.store.findUnique({
     where: { slug: params.slug },
-    select: { name: true },
+    select: {
+      name: true,
+      category: true,
+      address: true,
+      // Hanya gambar ber-URL http (crawler tak bisa baca base64) utk preview share.
+      products: {
+        where: { isActive: true, imageUrl: { startsWith: "http" } },
+        select: { imageUrl: true },
+        take: 1,
+      },
+    },
   });
+  if (!store) return { title: "Toko tidak ditemukan" };
+
+  const title = `${store.name} — Katalog Produk`;
+  const description = `Belanja & pesan produk dari ${store.name}${
+    store.category ? ` · ${store.category}` : ""
+  }. Pesan online, bayar praktis.`;
+  const ogImage = store.products[0]?.imageUrl || "/icon-512.png";
+
   return {
-    title: store ? `${store.name} — Katalog Produk` : "Toko tidak ditemukan",
-    description: store ? `Lihat & pesan produk dari ${store.name}.` : undefined,
+    // Pastikan URL gambar relatif (/icon) jadi absolut saat dibagikan.
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_APP_URL || "https://santa-maria-project.vercel.app"
+    ),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: "SantaMaria",
+      images: [{ url: ogImage }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
   };
 }
 

@@ -10,8 +10,13 @@ const PUBLIC_PATHS = ["/login", "/signup"];
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Halaman katalog toko & halaman akses pesanan bersifat publik (tanpa login).
-  if (pathname.startsWith("/toko/") || pathname.startsWith("/order/")) {
+  // Halaman publik (tanpa login): katalog toko, akses pesanan, halaman legal.
+  if (
+    pathname.startsWith("/toko/") ||
+    pathname.startsWith("/order/") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/privacy")
+  ) {
     return NextResponse.next();
   }
 
