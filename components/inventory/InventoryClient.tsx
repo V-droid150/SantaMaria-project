@@ -17,6 +17,8 @@ import {
   ClipboardCheck,
   Video,
   Upload,
+  Download,
+  KeyRound,
 } from "lucide-react";
 import { rupiah } from "@/lib/format";
 import { useI18n } from "@/components/i18n/LanguageProvider";
@@ -73,6 +75,8 @@ export type InvProduct = {
   type: "PHYSICAL" | "DIGITAL";
   image: string | null;
   video: string | null;
+  digitalUrl: string | null;
+  digitalInfo: string | null;
   category: string | null;
   variants: InvVariant[];
 };
@@ -354,6 +358,8 @@ function ProductModal({
   );
   const [image, setImage] = useState<string | null>(product?.image ?? null);
   const [video, setVideo] = useState(product?.video ?? "");
+  const [digitalUrl, setDigitalUrl] = useState(product?.digitalUrl ?? "");
+  const [digitalInfo, setDigitalInfo] = useState(product?.digitalInfo ?? "");
   const [imgLoading, setImgLoading] = useState(false);
   const [vidUploading, setVidUploading] = useState(false);
 
@@ -433,6 +439,8 @@ function ProductModal({
           categoryName: category,
           image,
           videoUrl: video,
+          digitalUrl,
+          digitalInfo,
           variants: parsed,
         }),
       });
@@ -581,6 +589,37 @@ function ProductModal({
               ))}
             </div>
           </Field>
+
+          {/* Konten produk digital — hanya tampil bila tipe DIGITAL */}
+          {type === "DIGITAL" && (
+            <div className="space-y-4 rounded-xl border border-yellow-400/40 bg-yellow-400/5 p-4">
+              <Field label={t("inv.digitalUrl")}>
+                <div className="relative">
+                  <Download className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                  <input
+                    type="url"
+                    value={digitalUrl}
+                    onChange={(e) => setDigitalUrl(e.target.value)}
+                    placeholder={t("inv.digitalUrlPh")}
+                    className={`${inputCls} pl-9`}
+                  />
+                </div>
+              </Field>
+              <Field label={t("inv.digitalInfo")}>
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                  <textarea
+                    value={digitalInfo}
+                    onChange={(e) => setDigitalInfo(e.target.value)}
+                    rows={2}
+                    placeholder={t("inv.digitalInfoPh")}
+                    className={`${inputCls} pl-9`}
+                  />
+                </div>
+              </Field>
+              <p className="text-[11px] text-zinc-500">{t("inv.digitalHint")}</p>
+            </div>
+          )}
 
           <Field label={t("inv.desc")}>
             <textarea

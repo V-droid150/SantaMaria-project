@@ -213,6 +213,8 @@ model Product {
   type        ProductType @default(PHYSICAL)
   imageUrl    String?
   videoUrl    String? // link video produk (YouTube / URL video)
+  digitalUrl  String? // produk digital: link unduhan / Google Drive (dikirim setelah lunas)
+  digitalInfo String? // produk digital: instruksi/akses (mis. password, cara pakai)
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -365,6 +367,7 @@ model Order {
   paidAmount    Decimal       @default(0) @db.Decimal(14, 2)
 
   paymentProofUrl String? // bukti transfer (model pembayaran manual)
+  accessToken     String? @unique // token rahasia utk halaman akses pesanan publik /order/[token]
 
   note      String?
   createdAt DateTime @default(now())

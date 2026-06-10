@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { Prisma, OrderStatus, PaymentStatus, PaymentMethod, ProductType, SalesChannel } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isMidtransConfigured, createSnapToken, midtransClientKey, snapJsUrl } from "@/lib/midtrans";
+
+export const runtime = "nodejs";
+
+// Token rahasia untuk halaman akses pesanan publik /order/[token]
+// (pembeli memantau status & mengambil produk digital setelah lunas).
+function generateAccessToken(): string {
+  return randomBytes(24).toString("base64url");
+}
 
 // Order publik dari halaman katalog toko (tanpa login).
 // Status PENDING/UNPAID — pembayaran online menyusul. Stok belum dikurangi
@@ -134,6 +143,7 @@ export async function POST(req: Request) {
       return tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
+          accessToken: generateAccessToken(),
           status: OrderStatus.PENDING,
           channel: SalesChannel.ONLINE_STORE,
           subtotal: new Prisma.Decimal(subtotal),
@@ -148,11 +158,12 @@ export async function POST(req: Request) {
           customerId,
           items: { createMany: { data: orderItems } },
         },
-        select: { orderNumber: true, grandTotal: true },
+        select: { orderNumber: true, grandTotal: true, accessToken: true },
       });
     });
 
     const total = Number(order.grandTotal);
+    const token = order.accessToken;
 
     // Pembayaran otomatis (Snap) hanya jika dipilih & Midtrans aktif.
     if (payMethod === "auto" && isMidtransConfigured()) {
@@ -167,6 +178,7 @@ export async function POST(req: Request) {
           {
             orderNumber: order.orderNumber,
             total,
+            token,
             snapToken,
             clientKey: midtransClientKey(),
             snapUrl: snapJsUrl(),
@@ -175,11 +187,11 @@ export async function POST(req: Request) {
         );
       } catch {
         // Pembayaran gagal disiapkan -> order tetap ada (PENDING), tampilkan sukses biasa.
-        return NextResponse.json({ orderNumber: order.orderNumber, total }, { status: 201 });
+        return NextResponse.json({ orderNumber: order.orderNumber, total, token }, { status: 201 });
       }
     }
 
-    return NextResponse.json({ orderNumber: order.orderNumber, total }, { status: 201 });
+    return NextResponse.json({ orderNumber: order.orderNumber, total, token }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Gagal membuat pesanan";
     return NextResponse.json({ error: message }, { status: 400 });

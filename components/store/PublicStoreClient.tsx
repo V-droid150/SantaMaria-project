@@ -120,9 +120,13 @@ export default function PublicStoreClient({
   const [proof, setProof] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ orderNumber: string; total: number; paid?: boolean } | null>(
-    null
-  );
+  const [success, setSuccess] = useState<{
+    orderNumber: string;
+    total: number;
+    paid?: boolean;
+    token?: string;
+    hasDigital?: boolean;
+  } | null>(null);
 
   const lines = Object.values(cart);
   const itemCount = lines.reduce((n, l) => n + l.qty, 0);
@@ -189,8 +193,9 @@ export default function PublicStoreClient({
         return;
       }
 
+      const hasDigital = lines.some((l) => l.type === "DIGITAL");
       const finish = (paid: boolean) => {
-        setSuccess({ orderNumber: data.orderNumber, total: data.total, paid });
+        setSuccess({ orderNumber: data.orderNumber, total: data.total, paid, token: data.token, hasDigital });
         setCart({});
         setPanel("success");
       };
@@ -376,6 +381,8 @@ export default function PublicStoreClient({
                 orderNumber={success.orderNumber}
                 total={success.total}
                 paid={success.paid}
+                token={success.token}
+                hasDigital={success.hasDigital}
                 storePhone={store.phone}
                 onClose={() => setPanel(null)}
               />
@@ -769,12 +776,16 @@ function SuccessView({
   orderNumber,
   total,
   paid,
+  token,
+  hasDigital,
   storePhone,
   onClose,
 }: {
   orderNumber: string;
   total: number;
   paid?: boolean;
+  token?: string;
+  hasDigital?: boolean;
   storePhone: string | null;
   onClose: () => void;
 }) {
@@ -792,15 +803,34 @@ function SuccessView({
         Total: <span className="font-bold">{rupiah(total)}</span>
       </p>
       <p className="mt-4 max-w-xs text-sm text-zinc-500">
-        {paid
+        {hasDigital
+          ? paid
+            ? "Pembayaran diterima. Buka halaman pesanan untuk mengambil produk digitalmu."
+            : "Produk digital akan tersedia di halaman pesanan setelah pembayaran lunas."
+          : paid
           ? "Pembayaran diterima. Penjual akan segera memproses pesananmu."
           : `Pesananmu tersimpan. Penjual akan segera memproses${
               storePhone ? " dan menghubungimu" : ""
             }.`}
       </p>
+
+      {token && (
+        <a
+          href={`/order/${token}`}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-6 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-yellow-300"
+        >
+          {hasDigital ? "Buka Halaman Pesanan & Produk Digital" : "Lihat Status Pesanan"}
+        </a>
+      )}
+      {token && (
+        <p className="mt-2 max-w-xs text-[11px] text-zinc-400">
+          Simpan link ini untuk memantau pesananmu kapan saja.
+        </p>
+      )}
+
       <button
         onClick={onClose}
-        className="mt-6 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+        className="mt-4 rounded-xl border border-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
       >
         Kembali ke Katalog
       </button>

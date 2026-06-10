@@ -20,6 +20,8 @@ type Body = {
   categoryName?: string;
   image?: string | null;
   videoUrl?: string | null;
+  digitalUrl?: string | null;
+  digitalInfo?: string | null;
   variants?: VariantInput[];
 };
 
@@ -91,7 +93,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
       await tx.product.update({
         where: { id: existing.id },
-        data: { name, description: body.description?.trim() || null, type, categoryId, imageUrl, videoUrl },
+        data: {
+          name,
+          description: body.description?.trim() || null,
+          type,
+          categoryId,
+          imageUrl,
+          videoUrl,
+          digitalUrl: type === ProductType.DIGITAL ? body.digitalUrl?.trim() || null : null,
+          digitalInfo: type === ProductType.DIGITAL ? body.digitalInfo?.trim() || null : null,
+        },
       });
 
       const keptIds = new Set<string>();

@@ -19,6 +19,8 @@ type Body = {
   categoryName?: string;
   image?: string | null;
   videoUrl?: string | null;
+  digitalUrl?: string | null;
+  digitalInfo?: string | null;
   variants?: VariantInput[];
 };
 
@@ -92,6 +94,8 @@ export async function POST(req: Request) {
           type,
           imageUrl,
           videoUrl,
+          digitalUrl: type === ProductType.DIGITAL ? body.digitalUrl?.trim() || null : null,
+          digitalInfo: type === ProductType.DIGITAL ? body.digitalInfo?.trim() || null : null,
           storeId: session.storeId,
           categoryId,
           variants: {
