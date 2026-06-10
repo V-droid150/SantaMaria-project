@@ -69,8 +69,11 @@ export async function middleware(req: NextRequest) {
 // Handler sudah memvalidasi session sendiri (login/signup/oauth bersifat publik,
 // onboarding/orders mengecek getSession). Jika /api ikut kena middleware,
 // request POST bisa salah dialihkan saat user belum onboarded.
+// PENTING: sw.js & manifest.webmanifest WAJIB dikecualikan, kalau tidak
+// middleware mengembalikan HTML login -> PWA gagal "Install" & service worker
+// ditolak (MIME type salah).
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
