@@ -8,7 +8,7 @@ import RegisterSW from "@/components/pwa/RegisterSW";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "SantaMaria — UMKM Dashboard",
+  title: "SantaMaria — Your Business Partner",
   description:
     "Aplikasi SaaS untuk mengelola operasional UMKM: POS, inventaris, keuangan, CRM, dan laporan.",
   manifest: "/manifest.webmanifest",
