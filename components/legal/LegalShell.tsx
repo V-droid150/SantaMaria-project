@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/brand/Logo";
 
 // Kerangka halaman legal (Syarat / Privasi) — publik, tanpa login.
 export default function LegalShell({
@@ -15,8 +16,8 @@ export default function LegalShell({
       <header className="bg-zinc-900 text-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 font-extrabold text-zinc-900">
-              S
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 text-zinc-900">
+              <Logo className="h-6 w-6" />
             </div>
             <span className="text-lg font-bold">
               Santa<span className="text-yellow-400">Maria</span>

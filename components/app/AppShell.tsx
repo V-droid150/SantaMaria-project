@@ -24,6 +24,7 @@ import { getInitials } from "@/lib/format";
 import { canAccess } from "@/lib/rbac";
 import ChatWidget from "@/components/chat/ChatWidget";
 import NotificationButton from "@/components/app/NotificationButton";
+import Logo from "@/components/brand/Logo";
 import { useI18n } from "@/components/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 
@@ -76,8 +77,8 @@ export default function AppShell({
       >
         <div className="flex h-16 items-center justify-between border-b border-zinc-800 px-5">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 font-extrabold text-zinc-900">
-              S
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 text-zinc-900">
+              <Logo className="h-6 w-6" />
             </div>
             <span className="text-lg font-bold text-white">
               Santa<span className="text-yellow-400">Maria</span>

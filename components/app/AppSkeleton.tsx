@@ -3,6 +3,8 @@
 // navigasi (klik 1x langsung terasa pindah) tanpa layar kosong/loader penuh.
 // Sengaja statis & ringan (tanpa "use client") agar muncul seketika.
 
+import Logo from "@/components/brand/Logo";
+
 function Bar({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-zinc-200/80 ${className}`} />;
 }
@@ -13,8 +15,8 @@ export default function AppSkeleton() {
       {/* Sidebar (sama posisi dgn AppShell, supaya tak ada kedip) */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-zinc-900 lg:flex">
         <div className="flex h-16 items-center gap-2 border-b border-zinc-800 px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 font-extrabold text-zinc-900">
-            S
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400 text-zinc-900">
+            <Logo className="h-6 w-6" />
           </div>
           <span className="text-lg font-bold text-white">
             Santa<span className="text-yellow-400">Maria</span>

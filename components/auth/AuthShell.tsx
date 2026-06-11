@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 
 // Layout auth dua kolom: panel brand (hitam, desktop) + area form (putih).
 // Responsif: di mobile/tablet hanya area form yang tampil, full width.
@@ -17,8 +18,8 @@ export default function AuthShell({
       {/* Panel brand — hanya desktop */}
       <aside className="relative hidden w-1/2 flex-col justify-between bg-zinc-900 p-12 text-white lg:flex xl:w-[45%]">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-400 text-xl font-extrabold text-zinc-900">
-            S
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-400 text-zinc-900">
+            <Logo className="h-7 w-7" />
           </div>
           <span className="text-xl font-bold">
             Santa<span className="text-yellow-400">Maria</span>
@@ -57,8 +58,8 @@ export default function AuthShell({
         <div className="w-full max-w-sm">
           {/* Logo untuk mobile */}
           <div className="mb-8 flex flex-col items-center gap-3 lg:hidden">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-xl font-extrabold text-yellow-400">
-              S
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-yellow-400">
+              <Logo className="h-8 w-8" />
             </div>
           </div>
 
